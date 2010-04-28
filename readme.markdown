@@ -1,6 +1,6 @@
-Trolley is intended to be a lightweight cart system designed to 
+Django-trolley is a lightweight cart system designed to 
 work with a custom product catalogue app. One or more product catalogues 
-can send products to trolley via api.py; trolley then takes care of 
+can send products to the included cart via api.py; cart then takes care of 
 gathering address details etc and payment.
 
 Currently this is a work in progress.

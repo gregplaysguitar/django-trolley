@@ -5,6 +5,7 @@ gathering address details etc and payment.
 
 Currently this is a work in progress.
 
+Thanks to http://code.google.com/p/django-cart/ for inspiration.
 
 
 # Requirements

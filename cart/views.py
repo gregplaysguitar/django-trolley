@@ -4,7 +4,6 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.conf import settings
 from django.template.loader import get_template
 from django.core.mail import send_mail, mail_managers
-from culturethree.util.helpers import run_async
 from models import Order
 from forms import AddToCartForm, OrderForm
 from django.core.urlresolvers import reverse
@@ -18,7 +17,7 @@ def index(request):
     if request.is_ajax():
         template = 'cart/index_ajax.html',
     else:
-        template = 'wines/index.html',
+        template = 'cart/index.html',
         
     return render_to_response(
         template, 
@@ -155,7 +154,7 @@ def complete(request, order_hash):
         def TMP_send_messages():
             if order.email and not order.acknowledgement_sent:
                 send_mail(
-                    mk_subject("Your Hunter's wine is on the way."),
+                    mk_subject("Your purchase is on the way."),
                     acknowledge_body, 
                     settings.DEFAULT_FROM_EMAIL,
                     [order.email]

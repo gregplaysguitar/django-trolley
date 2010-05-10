@@ -10,7 +10,7 @@ from django.core.urlresolvers import reverse
 from api import Cart
 import simplejson
 from utils import form_errors_as_notification
-
+from django.contrib import messages
 
 
 def index(request):
@@ -183,7 +183,7 @@ def clear(request):
         return HttpResponseNotAllowed('GET not allowed; POST is required.')
     else:
         Cart(request).clear()
-        notification = ('Your cart was emptied',)
+        notification = (messages.SUCCESS, 'Your cart was emptied',)
         
         if request.is_ajax():
             response = HttpResponse()
@@ -206,9 +206,9 @@ def add(request, form_class=AddToCartForm):
         form = form_class(request.POST)
         if form.is_valid():
             form.add(request)
-            notification = ('Product added to cart',)
+            notification = (messages.SUCCESS, 'Product added to cart',)
         else:
-            notification = ('Could not add product to cart. %s' % form_errors_as_notification(form.errors), 'error')
+            notification = (messages.ERROR, 'Could not add product to cart. %s' % form_errors_as_notification(form.errors))
                     
         
         
@@ -235,7 +235,8 @@ def add(request, form_class=AddToCartForm):
                 
             return response
         else:
-            request.notifications.add(*notification)
+            messages.add_message(request, *notification)
+
             if form.is_valid():
                 return HttpResponseRedirect(request.POST.get('redirect_to', reverse(index)))
             else:

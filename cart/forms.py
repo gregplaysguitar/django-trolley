@@ -53,6 +53,16 @@ class AddToCartForm(forms.Form):
     def add(self, request):
         Cart(request).add(self.get_product(), self.cleaned_data['quantity'])
     
+    
+    def __init__(self, *args, **kwargs):
+        single = kwargs.pop('single', False)
+        returnval = super(AddToCartForm, self).__init__(*args, **kwargs)
+
+        if single:
+            self.fields['quantity'].initial = 1
+            self.fields['quantity'].widget = forms.widgets.HiddenInput()
+            
+        return returnval
 
 
 class OrderForm(forms.ModelForm):

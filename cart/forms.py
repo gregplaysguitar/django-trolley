@@ -18,6 +18,8 @@ product_type_queryset = ContentType.objects.filter(
     reduce(Q.__or__, [Q(app_label=t[0], model=t[1]) for t in cart_settings.PRODUCT_TYPES])
 )
 
+#print product_type_queryset, cart_settings.PRODUCT_TYPES
+
 class AddToCartForm(forms.Form):
     product_type = forms.ModelChoiceField(
         queryset=product_type_queryset,
@@ -56,12 +58,16 @@ class AddToCartForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
         single = kwargs.pop('single', False)
+        product_instance = kwargs.pop('product_instance', False)
         returnval = super(AddToCartForm, self).__init__(*args, **kwargs)
-
+        
         if single:
             self.fields['quantity'].initial = 1
             self.fields['quantity'].widget = forms.widgets.HiddenInput()
-            
+        if product_instance:
+            self.fields['product_id'].initial = product_instance.id
+            self.fields['product_type'].initial = ContentType.objects.get_for_model(product_instance).id
+        
         return returnval
 
 

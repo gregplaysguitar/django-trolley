@@ -3,7 +3,7 @@ from django.conf import settings
 PRODUCT_TYPES = getattr(
     settings,
     'CART_PRODUCT_TYPES',
-    (('products', 'product'),)
+    (('shop', 'product'),)
 )
 
 

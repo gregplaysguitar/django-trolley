@@ -19,10 +19,14 @@ def index(request):
     else:
         template = 'cart/index.html',
         
+    cart = Cart(request)
+    
+    print cart
+        
     return render_to_response(
         template, 
         RequestContext(request, {
-            'cart': Cart(request),
+            'cart': cart,
         })
     )
 
@@ -192,7 +196,7 @@ def clear(request):
             }))
             return response
         else:
-            request.notifications.add(*notification)
+            messages.add_message(request, *notification)
             return HttpResponseRedirect(request.POST.get('redirect_to', reverse(index)))
   
 

@@ -11,6 +11,7 @@ import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 import string, random
+import decimal
 
 
 # Any items to be added to the cart must implement the following interface.
@@ -26,7 +27,8 @@ class CartProductInterface(object):
     def get_price(self, quantity, options={}):
         raise NotImplementedError()
 
-    def get_shipping_cost(self):
+    @staticmethod
+    def get_shipping_cost(items):
         raise NotImplementedError()
 
     @staticmethod
@@ -39,8 +41,9 @@ class DefaultCartProductInterface(CartProductInterface):
     def get_thumbnail(self, options={}):
         return None
 
-    def get_shipping_cost(self):
-        return None
+    @staticmethod
+    def get_shipping_cost(items):
+        return 0
 
     @staticmethod
     def verify_purchase(items):

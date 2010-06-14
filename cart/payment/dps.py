@@ -46,9 +46,7 @@ class PaymentBackend:
            
             host = 'http://' + request.META['HTTP_HOST']
             
-            amount = str(order.total())
-            if amount[-2] == '.':
-                amount = amount + '0'
+            amount = "%.2f" % order.total()
             values = {
                 'GenerateRequest': {
                     'PxPayUserId': settings.PXPAY_USERID,

@@ -13,6 +13,37 @@ from django.contrib.contenttypes import generic
 import string, random
 
 
+# Any items to be added to the cart must implement the following interface.
+# CartProductInterface is the minimal one; it does nothing.
+# DefaultCartProductInterface implements sensible defaults.
+
+class CartProductInterface(object):
+    """Minimal CartProductInterface implementation, raising NotImplementedError
+    for all required methods."""
+    def get_thumbnail(self, options={}):
+        raise NotImplementedError()
+
+    def get_shipping_cost(self):
+        raise NotImplementedError()
+
+    @staticmethod
+    def verify_purchase(items):
+        raise NotImplementedError()
+
+class DefaultCartProductInterface(CartProductInterface):
+    """CartProductInterface interface implementation, giving sensible defaults for
+    all required methods."""
+    def get_thumbnail(self, options={}):
+        return None
+
+    def get_shipping_cost(self):
+        return None
+
+    @staticmethod
+    def verify_purchase(items):
+        return True
+
+
 ORDER_STATUSES = [
     ('pending', 'Pending'),
     ('confirmed', 'Confirmed'),

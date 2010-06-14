@@ -23,6 +23,9 @@ class CartProductInterface(object):
     def get_thumbnail(self, options={}):
         raise NotImplementedError()
 
+    def get_price(self, quantity, options={}):
+        raise NotImplementedError()
+
     def get_shipping_cost(self):
         raise NotImplementedError()
 

@@ -3,6 +3,7 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response, get_object_or_404
 from django.conf import settings
 from django.template.loader import get_template
+from django.template.loader import render_to_string
 from django.core.mail import send_mail, mail_managers
 from models import Order
 from forms import AddToCartForm, OrderForm
@@ -149,16 +150,18 @@ def complete(request, order_hash):
     order = get_object_or_404(Order, hash=order_hash)
     
     if (not order.notification_sent or not order.acknowledgement_sent) and order.payment_successful:
-        acknowledge_body = get_template('cart/email/order_acknowledge.txt').render(
-            RequestContext(request, {'order': order})
-        )
-        notify_body = get_template('cart/email/order_notify.txt').render(
-            RequestContext(request, {'order': order})
-        )
+        acknowledge_body = render_to_string('cart/email/order_acknowledge.txt',
+            RequestContext(request, {'order': order}))
+        acknowledge_subject = render_to_string('cart/email/order_acknowledge_subject.txt',
+                RequestContext(request, {'order': order}))
+
+        notify_body = render_to_string('cart/email/order_notify.txt',
+            RequestContext(request, {'order': order}))
+
         def TMP_send_messages():
             if order.email and not order.acknowledgement_sent:
                 send_mail(
-                    mk_subject("Your purchase is on the way."),
+                    acknowledge_subject,
                     acknowledge_body, 
                     settings.DEFAULT_FROM_EMAIL,
                     [order.email]
@@ -245,14 +248,4 @@ def add(request, form_class=AddToCartForm):
                 return HttpResponseRedirect(request.POST.get('redirect_to', reverse(index)))
             else:
                 return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse(index)))
-    
-
-
-
-
-def mk_subject(text):
-    return "%s%s" % (settings.EMAIL_SUBJECT_PREFIX, text)
-
-
-
 

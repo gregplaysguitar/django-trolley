@@ -26,6 +26,11 @@ def create_cart_index(product, options):
             pickle.dumps(options))
 
 
+
+
+
+
+
 class Item(DictMixin):
     def __init__(self, data):
         self.data = {'options': {}}
@@ -48,15 +53,25 @@ class Item(DictMixin):
 
     @property
     def product(self):
-        ctype = ContentType.objects.get(pk=self.data['product_content_type_id']).model_class()
-        return ctype.objects.get(pk=self.data['product_pk'])
+        if not self._product:
+            ctype = ContentType.objects.get(pk=self.data['product_content_type_id']).model_class()
+            self._product = ctype.objects.get(pk=self.data['product_pk'])
+        return self._product
+    _product = None
+    
     
     def row_total(self):
-        return self.product.get_price(self.get('quantity', 0), self['options'])
+        if not self._row_total:
+            self._row_total = self.product.get_price(self.get('quantity', 0), self['options'])
+        return self._row_total
+    _row_total = None
     
     def ctype(self):
-        return ContentType.objects.get_for_model(self.product)
-        
+        if not self._ctype:
+            self._ctype = ContentType.objects.get_for_model(self.product)
+        return self._ctype
+    _ctype = None
+    
     def createindex(self):
         return create_cart_index(self.product, self['options'])
     
@@ -66,6 +81,15 @@ class Item(DictMixin):
 
  
 class Cart:
+    __single = None # the one, true Singleton
+
+    def __new__(classtype, *args, **kwargs):
+        if classtype != type(classtype.__single):
+            classtype.__single = object.__new__(classtype, *args, **kwargs)
+        return classtype.__single
+    
+    
+    
     def __init__(self, request):
         if not request.session.get(CART_INDEX, False):
             request.session[CART_INDEX] = {}
@@ -81,10 +105,10 @@ class Cart:
     def __iter__(self):
         keys = self.lines.keys()
         keys.sort()
-
+        
         for item in map(self.lines.get, keys):
             try:
-                yield Item(item)
+                yield item
             except ItemIntegrityError:
                 pass
 
@@ -174,3 +198,5 @@ class Cart:
     
     def is_valid(self):
         return len(self.errors()) == 0
+        
+  

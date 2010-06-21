@@ -15,21 +15,23 @@ from django.contrib import messages
 
 
 def index(request):
+    return HttpResponseRedirect(reverse(checkout))
+    
+    """
     if request.is_ajax():
         template = 'cart/index_ajax.html',
     else:
         template = 'cart/index.html',
         
     cart = Cart(request)
-    
-    print cart
-        
+            
     return render_to_response(
         template, 
         RequestContext(request, {
             'cart': cart,
         })
     )
+    """
 
 def steps():
     return (

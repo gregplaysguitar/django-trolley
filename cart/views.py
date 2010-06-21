@@ -8,7 +8,7 @@ from django.core.mail import send_mail, mail_managers
 from models import Order
 from forms import AddToCartForm, OrderForm
 from django.core.urlresolvers import reverse
-from api import Cart
+from api import Cart, ItemAlreadyExists
 import simplejson
 from utils import form_errors_as_notification
 from django.contrib import messages
@@ -212,8 +212,11 @@ def add(request, form_class=AddToCartForm):
     else:
         form = form_class(request.POST)
         if form.is_valid():
-            form.add(request)
-            notification = (messages.SUCCESS, 'Product added to cart',)
+            try:
+                form.add(request)
+                notification = (messages.SUCCESS, 'Product added to cart. <a href="%s">View cart</a>' % (reverse(index)))
+            except ItemAlreadyExists:
+                notification = (messages.ERROR, 'Item is already in your cart. <a href="%s">View cart</a>' % (reverse(index)))
         else:
             notification = (messages.ERROR, 'Could not add product to cart. %s' % form_errors_as_notification(form.errors))
                     

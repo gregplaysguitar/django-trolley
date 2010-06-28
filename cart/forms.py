@@ -46,14 +46,18 @@ class AddToCartForm(forms.Form):
             return None
         
     def get_options(self):
-        # TODO
-        return {}    
+        options = {}
+        for field in self.cleaned_data:
+            if field not in ['product_id', 'product_type', 'quantity']:
+                options[field] = self.cleaned_data[field]
+        return options
+        
     
     def get_quantity(self):
         return self.cleaned_data['quantity']
     
     def add(self, request):
-        Cart(request).add(self.get_product(), self.cleaned_data['quantity'])
+        Cart(request).add(self.get_product(), self.cleaned_data['quantity'], self.get_options())
     
     
     def __init__(self, *args, **kwargs):
@@ -80,5 +84,5 @@ class OrderForm(forms.ModelForm):
         if not self.cleaned_data.get('email', None) and not self.cleaned_data.get('phone', None):
             self._errors['email'] = forms.util.ErrorList(['Please enter a phone number or an email address.'])
         return self.cleaned_data
-
+    
 OrderForm.base_fields['suburb'].required = False

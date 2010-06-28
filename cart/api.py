@@ -78,7 +78,8 @@ class Item(DictMixin):
     def formindex(self):
         return hashlib.md5(unicode(self.createindex())).hexdigest()
 
-
+    def options_text(self):
+        return ", ".join([self['options'][key] for key in self['options']])
  
 class Cart:
     __single = None # the one, true Singleton

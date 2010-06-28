@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 #from django.utils.translation import ugettext_lazy as _
 from django.db import models
 #from django.conf import settings
@@ -79,9 +82,10 @@ class Order(models.Model):
     payment_date = models.DateTimeField(null=True, blank=True, help_text="Leave blank to auto-fill this field")
     completion_date = models.DateTimeField(null=True, blank=True, help_text="Leave blank to auto-fill this field")
     session_id = models.CharField(max_length=32, editable=False)
-    #dps_transaction_ref = models.CharField(max_length=32, blank=True)
     
     shipping_cost = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    transaction_ref = models.CharField(max_length=32, blank=True)
     
     
     class Meta:

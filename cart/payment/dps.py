@@ -34,7 +34,7 @@ class PaymentBackend:
             payment_attempt.save()
                 
             order.payment_successful = (xml.find('Success').text == '1')
-            order.dps_transaction_ref = xml.find('DpsTxnRef').text
+            order.transaction_ref = xml.find('DpsTxnRef').text
             order.save()
             
             

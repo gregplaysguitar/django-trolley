@@ -12,6 +12,9 @@ from api import Cart, ItemAlreadyExists
 import simplejson
 from utils import form_errors_as_notification
 from django.contrib import messages
+import settings as cart_settings
+from django.utils import importlib
+
 
 
 def index(request):
@@ -128,9 +131,14 @@ def payment(request, param=None):
     order.status = 'confirmed'
     order.save()
     
-    from cart.payment.dps import PaymentBackend
+    if cart_settings.PAYMENT_BACKEND.find('.') == -1:
+        print 'cart.payment.%s' % cart_settings.PAYMENT_BACKEND
+        backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
+    else:
+        backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
     
-    backend = PaymentBackend()
+   
+    backend = backend_module.PaymentBackend()
     
     return backend.paymentView(request, param, order)
     

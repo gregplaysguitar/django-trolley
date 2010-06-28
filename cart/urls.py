@@ -10,7 +10,7 @@ urlpatterns = patterns('cart.views',
     (r'^payment/([\w_\-]+)/$', 'payment'),
     (r'^complete/([\w_\-]+)/$', 'complete'),
 
-    (r'^add/$', 'add'),
-    (r'^clear/$', 'clear'),
+    (r'^add/$', 'add', {}, 'cart_add'),
+    (r'^clear/$', 'clear', {}, 'cart_clear'),
     
 )

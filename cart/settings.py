@@ -8,3 +8,11 @@ PRODUCT_TYPES = getattr(
 
 
 ALLOW_ADD_EXISTING = True
+
+
+
+PAYMENT_BACKEND = getattr(
+    settings,
+    'CART_PAYMENT_BACKEND',
+    None
+)

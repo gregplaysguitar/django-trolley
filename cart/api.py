@@ -187,7 +187,7 @@ class Cart:
     def errors(self):
         errors = []
         if not self.quantity():
-            errors.append("Cart is empty.")
+            errors.append("No items in your cart.")
         
         for ctype in self.ctype_list():
             try:

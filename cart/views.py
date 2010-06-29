@@ -228,7 +228,7 @@ def add(request, form_class=AddToCartForm):
             except ItemAlreadyExists:
                 notification = (messages.ERROR, 'Item is already in your cart. <a href="%s">View cart</a>' % (reverse(index)))
         else:
-            notification = (messages.ERROR, 'Could not add product to cart. %s' % form_errors_as_notification(form.errors))
+            notification = (messages.ERROR, 'Could not add product to cart. %s' % form_errors_as_notification(form))
                     
         
         

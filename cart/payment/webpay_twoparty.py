@@ -15,6 +15,8 @@ from cart.payment import PaymentException
 
 class PaymentBackend:
     
+    SUCCESS_RESPONSE_CODES = ["00", "08", "77"]
+    
     def makePayment(self, amount, ref, data):
     
         webpayRef = webpay.newBundle() 
@@ -50,12 +52,20 @@ class PaymentBackend:
         webpay.put(webpayRef, "CARDDATA", str(data['number']))
         webpay.put(webpayRef, "CARDEXPIRYDATE", data['expiration'].strftime("%m%y"))
         
-        success = webpay.executeTransaction( webpayRef )
+        if webpay.executeTransaction(webpayRef):
+            transaction_ref = webpay.get(webpayRef, "TXNREFERENCE")
+            response_code = webpay.get(webpayRef, "RESPONSECODE")
+            response_text = webpay.get(webpayRef, "RESPONSETEXT")
+            error_string = webpay.get(webpayRef, "ERROR")
+            auth_code = webpay.get(webpayRef, "AUTHCODE")
+            
+            success = (responseCode in self.SUCCESS_RESPONSE_CODES)
+            message = "\n".join([response_text, response_code, error_string, auth_code])
+            return success, transaction_ref, message
+            
+        else:
+            return False, '', "Could not communicate with the payment server" 
         
-        message = "blah blah"
-        
-        return success, webpay.get(webpayRef, "TXNREFERENCE" ), message 
- 
 
 
  

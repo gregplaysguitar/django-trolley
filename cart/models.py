@@ -161,6 +161,7 @@ class PaymentAttempt(models.Model):
     hash = models.CharField(max_length=16, unique=True, editable=False)
     result = models.TextField(default='', blank=True)
     transaction_ref = models.CharField(max_length=32, blank=True)
+    amount = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     
     def __unicode__(self):
         return "Payment attempt #%s on Order #%s" % (self.pk, self.order.pk)

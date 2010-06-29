@@ -51,7 +51,7 @@ class PaymentBackend:
         tran_data = {
             'TOTALAMOUNT': "%.2f" % amount,
             'CARDDATA': str(data['number']),
-            'CARDDATA': data['expiration'].strftime("%m%y"),
+            'CARDEXPIRYDATE': data['expiration'].strftime("%m%y"),
         }
         for key in tran_data:
             webpay.put(webpayRef, key, tran_data[key])

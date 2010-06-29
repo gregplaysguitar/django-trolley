@@ -162,6 +162,7 @@ class PaymentAttempt(models.Model):
     result = models.TextField(default='', blank=True)
     transaction_ref = models.CharField(max_length=32, blank=True)
     amount = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    success = models.BooleanField(default=False)
     
     def __unicode__(self):
         return "Payment attempt #%s on Order #%s" % (self.pk, self.order.pk)

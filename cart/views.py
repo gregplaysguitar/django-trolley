@@ -50,7 +50,7 @@ def checkout(request):
         for item in cart:
             index = 'quantity-%s' % unicode(item.formindex())
             try:
-                quantity = int(request.POST.get(index, item['quantity']))
+                quantity = int(request.POST.get(index, item['quantity']) or 0)
                 cart.update(item.product, quantity, item['options'])
             except ValueError:
                 pass

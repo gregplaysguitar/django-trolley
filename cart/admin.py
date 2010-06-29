@@ -17,7 +17,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_display_links = ('id', 'total_str', 'first_name', 'last_name',)
     list_filter = ('status', 'payment_successful', 'creation_date', 'completion_date')
     search_fields = ('first_name', 'last_name', 'email',)
-    inlines = [OrderLineInline]
+    inlines = [OrderLineInline, PaymentAttemptInline]
     actions = ('set_status_to_shipped',)
     
     def created(self, instance):

@@ -47,8 +47,8 @@ class PaymentBackend:
         webpay.put(webpayRef, "TRANSACTIONTYPE", "PURCHASE")
         
         webpay.put(webpayRef, "TOTALAMOUNT", "%.2f" % amount)
-        webpay.put(webpayRef, "CARDDATA", data['number'])
-        webpay.put(webpayRef, "CARDEXPIRYDATE", data['expiration'])
+        webpay.put(webpayRef, "CARDDATA", str(data['number']))
+        webpay.put(webpayRef, "CARDEXPIRYDATE", data['expiration'].strftime("%m%y"))
         
         success = webpay.executeTransaction( webpayRef )
         

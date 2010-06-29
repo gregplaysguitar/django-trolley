@@ -18,7 +18,7 @@ class PaymentBackend:
     SUCCESS_RESPONSE_CODES = ["00", "08", "77"]
     
     def makePayment(self, amount, ref, data):
-    
+        message = []
         webpayRef = webpay.newBundle() 
         if cart_settings.PAYMENT_DEBUG:
             webpay.put(webpayRef, "DEBUG", "ON")
@@ -48,9 +48,15 @@ class PaymentBackend:
         webpay.put(webpayRef, "INTERFACE", "CREDITCARD")
         webpay.put(webpayRef, "TRANSACTIONTYPE", "PURCHASE")
         
-        webpay.put(webpayRef, "TOTALAMOUNT", "%.2f" % amount)
-        webpay.put(webpayRef, "CARDDATA", str(data['number']))
-        webpay.put(webpayRef, "CARDEXPIRYDATE", data['expiration'].strftime("%m%y"))
+        tran_data = {
+            'TOTALAMOUNT': "%.2f" % amount,
+            'CARDDATA': str(data['number']),
+            'CARDDATA': data['expiration'].strftime("%m%y"),
+        }
+        for key in tran_data:
+            webpay.put(webpayRef, key, tran_data[key])
+            if cart_settings.PAYMENT_DEBUG:
+                message.append(key + ': ' + tran_data[key])
         
         if webpay.executeTransaction(webpayRef):
             transaction_ref = webpay.get(webpayRef, "TXNREFERENCE")
@@ -60,8 +66,8 @@ class PaymentBackend:
             auth_code = webpay.get(webpayRef, "AUTHCODE")
             
             success = (response_code in self.SUCCESS_RESPONSE_CODES)
-            message = "\n".join([response_text, response_code, error_string, auth_code])
-            return success, transaction_ref, message
+            message.append("\n".join([response_text, response_code, error_string, auth_code]))
+            return success, transaction_ref, "\n".join(message)
             
         else:
             return False, '', "Could not communicate with the payment server" 

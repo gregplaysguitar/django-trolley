@@ -83,7 +83,7 @@ class Order(models.Model):
     completion_date = models.DateTimeField(null=True, blank=True, help_text="Leave blank to auto-fill this field")
     session_id = models.CharField(max_length=32, editable=False)
     
-    shipping_cost = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    shipping_cost = models.DecimalField(max_digits=8, decimal_places=2, default=0)
 
     
     
@@ -145,7 +145,7 @@ class OrderLine(models.Model):
 
     quantity = models.IntegerField(default=1)
     # total price for the line, not per-unit
-    price = models.DecimalField(max_digits=6, decimal_places=2)
+    price = models.DecimalField(max_digits=8, decimal_places=2)
     
     class Meta:
         pass
@@ -161,7 +161,7 @@ class PaymentAttempt(models.Model):
     hash = models.CharField(max_length=16, unique=True, editable=False)
     result = models.TextField(default='', blank=True)
     transaction_ref = models.CharField(max_length=32, blank=True)
-    amount = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     success = models.BooleanField(default=False)
     
     def __unicode__(self):

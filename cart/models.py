@@ -85,7 +85,6 @@ class Order(models.Model):
     
     shipping_cost = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
-    transaction_ref = models.CharField(max_length=32, blank=True)
     
     
     class Meta:
@@ -161,6 +160,7 @@ class PaymentAttempt(models.Model):
     order = models.ForeignKey(Order)
     hash = models.CharField(max_length=16, unique=True, editable=False)
     result = models.TextField(default='', blank=True)
+    transaction_ref = models.CharField(max_length=32, blank=True)
     
     def __unicode__(self):
         return "Payment attempt #%s on Order #%s" % (self.pk, self.order.pk)

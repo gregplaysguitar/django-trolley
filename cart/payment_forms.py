@@ -100,7 +100,7 @@ class CCExpField(forms.MultiValueField):
         return None
 
 
-class PaymentForm(forms.Form):
+class CCForm(forms.Form):
     number = CreditCardField(
         required = True,
         label = "Card Number", 
@@ -114,10 +114,10 @@ class PaymentForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.payment_data = kwargs.pop('payment_data', None)
-        super(PaymentForm, self).__init__(*args, **kwargs)
+        super(CCForm, self).__init__(*args, **kwargs)
 
     def clean(self):
-        cleaned = super(PaymentForm, self).clean()
+        cleaned = super(CCForm, self).clean()
         if not self.errors:
             result = self.process_payment()
             if result and result[0] == 'Card declined':

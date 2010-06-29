@@ -6,7 +6,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django import forms
 from cart import settings as cart_settings
-from cart.payment_forms import PaymentForm
+from cart.payment_forms import CCForm
 from cart.api import Cart
 
 
@@ -16,7 +16,7 @@ class PaymentBackend:
     
     def paymentView(self, request, param, order):
         if request.POST:
-            payment_form = PaymentForm(request.POST)
+            payment_form = CCForm(request.POST)
             if payment_form.is_valid():
                 payment_attempt = order.paymentattempt_set.create()
                 payment_attempt.result = "RESULT HERE"
@@ -29,7 +29,7 @@ class PaymentBackend:
                 return HttpResponseRedirect(order.get_absolute_url())
                 
         else:
-            payment_form = PaymentForm()
+            payment_form = CCForm()
         
         
         return render_to_response(

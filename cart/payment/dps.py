@@ -31,10 +31,10 @@ class PaymentBackend:
             for el in xml:
                 result.append("%s: %s" % (el.tag, el.text))
             payment_attempt.result = '\n'.join(result)
+            payment_attempt.transaction_ref = xml.find('DpsTxnRef').text
             payment_attempt.save()
                 
             order.payment_successful = (xml.find('Success').text == '1')
-            order.transaction_ref = xml.find('DpsTxnRef').text
             order.save()
             
             

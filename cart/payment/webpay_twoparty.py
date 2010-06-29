@@ -59,7 +59,7 @@ class PaymentBackend:
             error_string = webpay.get(webpayRef, "ERROR")
             auth_code = webpay.get(webpayRef, "AUTHCODE")
             
-            success = (responseCode in self.SUCCESS_RESPONSE_CODES)
+            success = (response_code in self.SUCCESS_RESPONSE_CODES)
             message = "\n".join([response_text, response_code, error_string, auth_code])
             return success, transaction_ref, message
             

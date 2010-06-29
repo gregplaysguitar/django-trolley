@@ -79,14 +79,13 @@ class PaymentBackend:
                 success, transaction_ref, message = self.makePayment(order.total(), order.pk, payment_form.cleaned_data)
                 
                 payment_attempt.transaction_ref = transaction_ref
-                if success:
-                    payment_attempt.result = "Payment successful"
-                    order.payment_successful = True
-                    order.save()
-                else:
-                    payment_attempt.result = "Payment failed"
+                payment_attempt.result = message
+                payment_attempt.success = success
                 payment_attempt.save()
                 
+                if success:
+                    order.payment_successful = True
+                    order.save()
                 
                 return HttpResponseRedirect(order.get_absolute_url())
                 

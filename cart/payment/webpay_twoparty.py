@@ -59,14 +59,16 @@ class PaymentBackend:
                 message.append(key + ': ' + tran_data[key])
         
         if webpay.executeTransaction(webpayRef):
-            transaction_ref = webpay.get(webpayRef, "TXNREFERENCE")
-            response_code = webpay.get(webpayRef, "RESPONSECODE")
-            response_text = webpay.get(webpayRef, "RESPONSETEXT")
-            error_string = webpay.get(webpayRef, "ERROR")
-            auth_code = webpay.get(webpayRef, "AUTHCODE")
+            response_data = {
+                'TXNREFERENCE': webpay.get(webpayRef, "TXNREFERENCE"),
+                'RESPONSECODE': webpay.get(webpayRef, "RESPONSECODE"),
+                'RESPONSETEXT': webpay.get(webpayRef, "RESPONSETEXT"),
+                'ERROR': webpay.get(webpayRef, "ERROR"),
+                'AUTHCODE': webpay.get(webpayRef, "AUTHCODE"),
+            }
             
-            success = (response_code in self.SUCCESS_RESPONSE_CODES)
-            message.append("\n".join([response_text, response_code, error_string, auth_code]))
+            success = (response_data['RESPONSECODE'] in self.SUCCESS_RESPONSE_CODES)
+            message.append("\n".join(["%s: %s" % (key, response_data[key]) for key in response_data]))
             return success, transaction_ref, "\n".join(message)
             
         else:

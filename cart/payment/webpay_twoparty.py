@@ -69,7 +69,7 @@ class PaymentBackend:
             
             success = (response_data['RESPONSECODE'] in self.SUCCESS_RESPONSE_CODES)
             message.append("\n".join(["%s: %s" % (key, response_data[key]) for key in response_data]))
-            return success, transaction_ref, "\n".join(message)
+            return success, response_data['TXNREFERENCE'], "\n".join(message)
             
         else:
             return False, '', "Could not communicate with the payment server" 

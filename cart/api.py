@@ -39,6 +39,22 @@ class Item(DictMixin):
         for key in ('product_pk', 'quantity', 'product_content_type_id'):
             if not key in data:
                 raise ItemIntegrityError
+        
+        try:
+            data['quantity'] = int(data['quantity'])
+        except TypeError:
+            raise CartIntegrityError('Quantity must be a positive integer.')
+        
+        try:
+            model_class = ContentType.objects.get(pk=data['product_content_type_id']).model_class()
+        except (ContentType.DoesNotExist):
+            raise CartIntegrityError('Product type is not valid.')
+        
+        try:
+            model_class.objects.get(pk=data['product_pk'])
+        except model_class.DoesNotExist:
+            raise CartIntegrityError('Product does not exist.')
+        
         self.data.update(data)
         
     def __getitem__(self, key):
@@ -82,7 +98,8 @@ class Item(DictMixin):
 
     def options_text(self):
         return ", ".join([self['options'][key] for key in self['options']])
- 
+    
+    
 class Cart:
     __single = None # the one, true Singleton
 
@@ -138,7 +155,14 @@ class Cart:
         else:
             raise ItemAlreadyExists
             
-    def remove(self, product, options={}):
+    def remove(self, *args):
+        if isinstance(args[0], Item):
+            product = args[0].product
+            options = args[0]['options']
+        else:
+            product = args[0]
+            options = len(args) > 1 and args[1] or {}
+            
         index = create_cart_index(product, options)
         if self.lines.get(index, False):
             del(self.lines[index])

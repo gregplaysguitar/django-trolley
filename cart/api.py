@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import pickle
 from django.contrib.contenttypes.models import ContentType
 from UserDict import DictMixin

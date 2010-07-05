@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from django.conf import settings
 import urllib, urllib2
 from xml.etree import cElementTree as ElementTree

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from django import template
 import locale
 from easy_tag import easy_tag

@@ -89,6 +89,7 @@ class PaymentBackend:
                 payment_attempt.transaction_ref = transaction_ref
                 payment_attempt.result = message
                 payment_attempt.success = success
+                payment_attempt.amount = order.total()
                 payment_attempt.save()
                 
                 if success:

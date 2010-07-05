@@ -24,6 +24,7 @@ class PaymentBackend:
                     
                 order.payment_successful = True
                 order.transaction_ref = "REF HERE"
+                order.amount = order.total()
                 order.save()
                 
                 return HttpResponseRedirect(order.get_absolute_url())

@@ -10,7 +10,11 @@ PRODUCT_TYPES = getattr(
 
 ALLOW_ADD_EXISTING = True
 
-
+MANAGERS = getattr(
+    settings,
+    'CART_MANAGERS',
+    settings.MANAGERS
+)
 
 PAYMENT_BACKEND = getattr(
     settings,

@@ -179,7 +179,8 @@ class PaymentAttempt(models.Model):
         
 def create_hash(sender, **kwargs):
     while not kwargs['instance'].hash or PaymentAttempt.objects.filter(hash=kwargs['instance'].hash).exclude(pk=kwargs['instance'].pk):
-        kwargs['instance'].hash = ''.join(random.choice(string.digits + string.letters + '-_') for i in xrange(8))
+        hash = ''.join(random.choice(string.digits + string.letters) for i in xrange(8))
+        kwargs['instance'].hash = hash
 models.signals.pre_save.connect(create_hash, sender=PaymentAttempt)
 models.signals.pre_save.connect(create_hash, sender=Order)
 

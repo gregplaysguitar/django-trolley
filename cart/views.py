@@ -189,7 +189,12 @@ def complete(request, order_hash):
                     [order.email]
                 )
             if not order.notification_sent:
-                mail_managers("Order Received", notify_body)
+                send_mail(
+                    "Order Received",
+                    notify_body, 
+                    settings.DEFAULT_FROM_EMAIL,
+                    [t[1] for t in cart_settings.MANAGERS]
+                )
             order.save()
          
         #run_async(TMP_send_messages)

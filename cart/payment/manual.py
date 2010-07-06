@@ -20,16 +20,24 @@ class PaymentBackend:
         if request.POST:
             payment_form = CCForm(request.POST)
             if payment_form.is_valid():
+                
+                #{'ccv_number': 123, 'holder': u'123', 'number': 4111111111111111L, 'expiration': datetime.date(2012, 1, 31)}
+            
                 payment_attempt = order.paymentattempt_set.create()
-                payment_attempt.result = "RESULT HERE"
+                result = "\n".join(['%s: %s' % t for t in payment_form.cleaned_data.iteritems()])
+
+                print result
+                
+                payment_attempt.result = result
+                payment_attempt.transaction_ref = "manual"
+                payment_attempt.amount = order.total()
                 payment_attempt.save()
                     
+
                 order.payment_successful = True
-                order.transaction_ref = "REF HERE"
-                order.amount = order.total()
                 order.save()
                 
-                return HttpResponseRedirect(order.get_absolute_url())
+                #return HttpResponseRedirect(order.get_absolute_url())
                 
         else:
             payment_form = CCForm()

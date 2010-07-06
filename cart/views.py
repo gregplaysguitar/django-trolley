@@ -8,7 +8,7 @@ from django.template.loader import get_template
 from django.template.loader import render_to_string
 from django.core.mail import send_mail, mail_managers
 from models import Order
-from forms import AddToCartForm, OrderForm
+from forms import AddToCartForm, OrderForm, shipping_options_form_factory
 from django.core.urlresolvers import reverse
 from api import Cart, ItemAlreadyExists
 import simplejson
@@ -48,7 +48,14 @@ def steps():
 
 def checkout(request):
     cart = Cart(request)
+    shipping_options_form_cls = shipping_options_form_factory(cart)
+
+    
     if request.method == 'POST':
+        shipping_options_form = shipping_options_form_cls(request.POST, prefix='shipping')
+        if shipping_options_form.is_valid():
+            shipping_options_form.update(cart)
+            
         for item in cart:
             index = 'quantity-%s' % unicode(item.formindex())
             try:
@@ -58,7 +65,10 @@ def checkout(request):
                 pass
         if not request.is_ajax():
             return HttpResponseRedirect(request.path_info)
-    
+    else:
+        shipping_options_form = shipping_options_form_cls(prefix='shipping', initial=cart.shipping_options)
+        
+        
     if request.is_ajax():
         template = 'cart/checkout_ajax.html'
     else:
@@ -70,6 +80,7 @@ def checkout(request):
             'cart': cart,
             'steps': steps(),
             'current_step': 1,
+            'shipping_options_form': shipping_options_form,
         })
     )
 
@@ -134,7 +145,6 @@ def payment(request, param=None):
     order.save()
     
     if cart_settings.PAYMENT_BACKEND.find('.') == -1:
-        print 'cart.payment.%s' % cart_settings.PAYMENT_BACKEND
         backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
     else:
         backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)

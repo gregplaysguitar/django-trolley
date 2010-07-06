@@ -77,6 +77,25 @@ class AddToCartForm(forms.Form):
         return returnval
 
 
+
+def shipping_options_form_factory(cart):
+    class ShippingOptionsForm(forms.Form):
+        def update(self, cart):
+            for name in self.cleaned_data:
+                cart.shipping_options[name] = self.cleaned_data[name]
+            cart.modified()
+            
+    
+    for option_tuple in cart.get_available_shipping_options():
+        if option_tuple[2]:
+            field = forms.ChoiceField(label=option_tuple[1], choices=option_tuple[2])
+        else:
+            field = forms.CharField(label=option_tuple[1])
+        ShippingOptionsForm.base_fields[option_tuple[0]] = field
+    
+    return ShippingOptionsForm
+
+
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order

@@ -117,9 +117,12 @@ class Cart:
             request.session[CART_INDEX]['lines'] = {}
         if not request.session[CART_INDEX].get('data'):
             request.session[CART_INDEX]['data'] = {}
+        if not request.session[CART_INDEX].get('shipping_options'):
+            request.session[CART_INDEX]['shipping_options'] = {}
         
         self.lines = request.session[CART_INDEX]['lines']
         self.data = request.session[CART_INDEX]['data']
+        self.shipping_options = request.session[CART_INDEX]['shipping_options']
         self.session = request.session
     
     def __iter__(self):
@@ -201,8 +204,14 @@ class Cart:
     def shipping_cost(self):
         cost = decimal.Decimal(0)
         for ctype in self.ctype_list():
-            cost += ctype.model_class().get_shipping_cost([item for item in self if item.ctype() == ctype])
+            cost += ctype.model_class().get_shipping_cost([item for item in self if item.ctype() == ctype], self.shipping_options)
         return cost
+    
+    def get_available_shipping_options(self):
+        options = ()
+        for ctype in self.ctype_list():
+            options += ctype.model_class().get_available_shipping_options([item for item in self if item.ctype() == ctype]) or ()
+        return options
         
     def subtotal(self):
         return sum([item.row_total() for item in self])
@@ -225,5 +234,7 @@ class Cart:
     
     def is_valid(self):
         return len(self.errors()) == 0
-        
+    
+  
+    
   

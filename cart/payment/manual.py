@@ -26,13 +26,10 @@ class PaymentBackend:
                 payment_attempt = order.paymentattempt_set.create()
                 result = "\n".join(['%s: %s' % t for t in payment_form.cleaned_data.iteritems()])
 
-                print result
-                
                 payment_attempt.result = result
                 payment_attempt.transaction_ref = "manual"
                 payment_attempt.amount = order.total()
                 payment_attempt.save()
-                    
 
                 order.payment_successful = True
                 order.save()

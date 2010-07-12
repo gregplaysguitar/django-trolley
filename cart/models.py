@@ -78,6 +78,7 @@ class Order(models.Model):
     suburb = models.CharField(max_length=255, blank=True, default='')
     city = models.CharField(max_length=255)
     post_code = models.PositiveIntegerField()
+    country = models.CharField(max_length=255)
     
     
     status = models.CharField(max_length=20, choices=ORDER_STATUSES, default='pending')

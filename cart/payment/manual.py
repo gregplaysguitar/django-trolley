@@ -34,7 +34,7 @@ class PaymentBackend:
                 order.payment_successful = True
                 order.save()
                 
-                #return HttpResponseRedirect(order.get_absolute_url())
+                return HttpResponseRedirect(order.get_absolute_url())
                 
         else:
             payment_form = CCForm()

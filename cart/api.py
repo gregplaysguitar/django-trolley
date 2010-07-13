@@ -204,7 +204,7 @@ class Cart:
     def shipping_cost(self):
         cost = decimal.Decimal(0)
         for ctype in self.ctype_list():
-            cost += ctype.model_class().get_shipping_cost([item for item in self if item.ctype() == ctype], self.shipping_options)
+            cost += (ctype.model_class().get_shipping_cost([item for item in self if item.ctype() == ctype], self.shipping_options) or 0)
         return cost
     
     def get_available_shipping_options(self):
@@ -214,7 +214,7 @@ class Cart:
         return options
         
     def subtotal(self):
-        return sum([item.row_total() for item in self])
+        return sum([(item.row_total() or 0) for item in self])
         
     def total(self):
         return decimal.Decimal(self.subtotal()) + self.shipping_cost()

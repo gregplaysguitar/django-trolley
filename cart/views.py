@@ -8,11 +8,11 @@ from django.template.loader import get_template
 from django.template.loader import render_to_string
 from django.core.mail import send_mail, mail_managers
 from models import Order
-from forms import AddToCartForm, OrderForm, shipping_options_form_factory
+from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory
 from django.core.urlresolvers import reverse
 from api import Cart, ItemAlreadyExists
 import simplejson
-from utils import form_errors_as_notification
+from utils import form_errors_as_notification, get_order_detail_class
 from django.contrib import messages
 import settings as cart_settings
 from django.utils import importlib
@@ -93,37 +93,58 @@ def delivery(request):
     
     try:
         instance = Order.objects.get(pk=cart.data.get('order_pk', None))
+        try:
+            detail_instance = instance.get_detail()
+        except get_order_detail_class().DoesNotExist:
+            detail_instance = None
     except Order.DoesNotExist:
         instance = None
+        detail_instance = None
+    
+    # get detail form, or dummy form if no ORDER_DETAIL_MODEL defined
+    detail_form_cls = order_detail_form_factory()
+    
+    form_kwargs = {'label_suffix': '', 'instance': instance}
+    detail_form_kwargs = {'label_suffix': '', 'instance': detail_instance, 'prefix': 'detail'}
+    
     
     if request.POST:
-        form = OrderForm(request.POST, label_suffix='', instance=instance)
-        if form.is_valid():
+        form = OrderForm(request.POST, **form_kwargs)
+        detail_form = detail_form_cls(request.POST, **detail_form_kwargs)
+        if form.is_valid() and detail_form.is_valid():
             order = form.save(commit=False)
             order.session_id = request.session.session_key
             order.shipping_cost = cart.shipping_cost()
-            
             order.save()
+            
+            
+            detail = detail_form.save(commit=False)
+            detail.order = order # in case it is being created for the first time
+            detail.save()
             
             cart.data['order_pk'] = order.pk
             cart.modified()
             return HttpResponseRedirect(reverse('cart.views.payment'))
-            
-            """
-            cart.clear()
-            """
+
     else:
-        form = OrderForm(label_suffix='', instance=instance)
-    
+        form = OrderForm(**form_kwargs)
+        detail_form = detail_form_cls(**detail_form_kwargs)
+
+
     return render_to_response(
         'cart/delivery.html', 
         RequestContext(request, {
             'cart': cart,
             'form': form,
+            'detail_form': detail_form,
             'steps': steps(),
             'current_step': 2,
         })
     )
+    
+    
+    
+    
 
 def payment(request, param=None):
     cart = Cart(request)

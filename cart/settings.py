@@ -6,9 +6,14 @@ PRODUCT_TYPES = getattr(
     'CART_PRODUCT_TYPES',
     (('shop', 'product'),)
 )
-
-
 ALLOW_ADD_EXISTING = True
+
+ORDER_DETAIL_MODEL = getattr(
+    settings,
+    'CART_ORDER_DETAIL_MODEL',
+    None
+)
+
 
 MANAGERS = getattr(
     settings,

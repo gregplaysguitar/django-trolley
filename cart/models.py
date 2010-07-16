@@ -15,11 +15,16 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 import string, random
 import decimal
-
+from utils import get_order_detail_class, OrderDetailNotAvailable
 
 # Any items to be added to the cart must implement the following interface.
 # CartProductInterface is the minimal one; it does nothing.
 # DefaultCartProductInterface implements sensible defaults.
+
+
+
+
+
 
 class CartProductInterface(object):
     """Minimal CartProductInterface implementation, raising NotImplementedError
@@ -129,6 +134,19 @@ class Order(models.Model):
     def get_admin_url(self):
         return ('admin:cart_order_change', (self.pk,))
 
+    
+    def get_detail(self):
+        """
+        Returns extra detail as stored in the ORDER_DETAIL_MODEL setting
+        """
+        if not hasattr(self, '_detail_cache'):
+            try:
+                self._detail_cache = get_order_detail_class()._default_manager.using(self._state.db).get(order__id__exact=self.id)
+                self._detail_cache.order = self
+            except OrderDetailNotAvailable:
+                self._detail_cache = None
+        return self._detail_cache
+    
     
     """
     def has_shipped(self):

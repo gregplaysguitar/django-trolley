@@ -1,4 +1,6 @@
 from django.conf import settings
+import settings as cart_settings
+from django.db import models
 
 ## UTIL FUNCTIONS FOR CART STUFF
 
@@ -12,6 +14,8 @@ def mk_subject(text):
 """
 
 
+class OrderDetailNotAvailable(Exception):
+    pass
 
 
 
@@ -26,3 +30,15 @@ def form_errors_as_notification(form):
         return ', '.join(errors)
     else:
         return ''
+        
+
+
+def get_order_detail_class():
+    if not getattr(cart_settings, 'ORDER_DETAIL_MODEL', False):
+        raise ExtraDetailNotAvailable
+    else:
+        try:
+            app_label, model_name = cart_settings.ORDER_DETAIL_MODEL.split('.')
+            return models.get_model(app_label, model_name)
+        except (ImportError):
+            raise ExtraDetailNotAvailable

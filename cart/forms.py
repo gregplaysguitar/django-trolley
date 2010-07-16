@@ -13,7 +13,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from api import Cart
 from django.forms.formsets import formset_factory
-
+from utils import get_order_detail_class, OrderDetailNotAvailable
 
     
 product_type_queryset = ContentType.objects.filter(
@@ -107,3 +107,16 @@ class OrderForm(forms.ModelForm):
         return self.cleaned_data
     
 OrderForm.base_fields['suburb'].required = False
+
+
+def order_detail_form_factory():
+    try:
+        model_cls = get_order_detail_class()
+        class OrderDetailForm(forms.ModelForm):
+            class Meta:
+                model = model_cls
+                exclude = ('order',)
+        return OrderDetailForm
+    except OrderDetailNotAvailable:
+        # dummy form class with no fields, to simplify the view
+        return forms.Form

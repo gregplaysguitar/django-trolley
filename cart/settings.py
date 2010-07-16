@@ -16,36 +16,36 @@ MANAGERS = getattr(
     settings.MANAGERS
 )
 
+ALLOWED_CARD_TYPES = ('Visa', 'Mastercard') # from ('Visa', 'MasterCard', 'American Express', 'Discover')
+
+
 PAYMENT_BACKEND = getattr(
     settings,
     'CART_PAYMENT_BACKEND',
     None
 )
-
 PAYMENT_DEBUG = getattr(
     settings,
     'CART_PAYMENT_DEBUG',
     settings.DEBUG
 )
-
 LOG_DIR = getattr(
     settings,
     'CART_LOG_DIR',
     os.path.join(settings.PROJECT_ROOT, 'log')
 )
 
+
 WEBPAY_CLIENT_ID = getattr(
     settings,
     'CART_WEBPAY_CLIENT_ID',
     None
 )
-
 WEBPAY_CERTIFICATE_PATH = getattr(
     settings,
     'CART_WEBPAY_CERTIFICATE_PATH',
     None
 )
-
 WEBPAY_CERTIFICATE_PASSWORD = getattr(
     settings,
     'CART_WEBPAY_CERTIFICATE_PASSWORD',

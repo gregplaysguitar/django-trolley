@@ -1,9 +1,9 @@
 from datetime import date, datetime
 from calendar import monthrange
 from django import forms
+import settings as cart_settings
 
-
-class CreditCardField(forms.IntegerField):
+class CreditCardField(forms.CharField):
     @staticmethod
     def get_cc_type(number):
         """
@@ -30,17 +30,17 @@ class CreditCardField(forms.IntegerField):
             if number[0] == "4":
                 return "Visa"
         return "Unknown"
-
+    
     def clean(self, value):
         """Check if given CC number is valid and one of the
            card types we accept"""
-        if value and (len(value) < 13 or len(value) > 16):
-            raise forms.ValidationError("Please enter in a valid "+\
-                "credit card number.")
-        elif self.get_cc_type(value) not in ("Visa", "MasterCard",
-                                             "American Express"):
-            raise forms.ValidationError("Please enter in a Visa, "+\
-                "Master Card, or American Express credit card number.")
+         
+        value = value.replace('-', '').replace(' ', '')
+        
+        if value and (len(value) < 13 or len(value) > 16 or not value.isdigit()):
+            raise forms.ValidationError('Please enter in a valid credit card number.')
+        elif self.get_cc_type(value) not in cart_settings.ALLOWED_CARD_TYPES:
+            raise forms.ValidationError('Please enter one of the following card types: %s' % (', '.join(cart_settings.ALLOWED_CARD_TYPES)))
         return super(CreditCardField, self).clean(value)
 
 
@@ -104,7 +104,7 @@ class CCForm(forms.Form):
     number = CreditCardField(
         required = True,
         label = "Card Number", 
-        widget = forms.TextInput(attrs = {'maxlength': 16})
+        widget = forms.TextInput(attrs = {'maxlength': 19})
     )
     holder = forms.CharField(required = True, label = "Card Holder Name",
         max_length = 60)

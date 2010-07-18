@@ -5,16 +5,44 @@ from models import Order, OrderLine, PaymentAttempt
 import datetime
 import settings as cart_settings
 from django.db import models
+from django import forms
+from django.utils.safestring import mark_safe
+
 
 
 class PaymentAttemptInline(admin.TabularInline):
     model = PaymentAttempt
     extra = 0
 
+
+class OrderLineLabelWidget(forms.widgets.HiddenInput):
+    def __init__(self, attrs=None, model=None, **kwargs):
+        super(OrderLineLabelWidget, self).__init__(attrs)
+        self.model = model
+        self.is_hidden = False
+        
+    def render(self, *args, **kwargs):
+        if self.model:
+            text_value = getattr(self.model, 'order_line_description', "%s: %s" % (self.model.product_content_type.app_label.title(), self.model))
+        else:
+            text_value = ''
+        return mark_safe("<p>%s</p>%s" % (text_value, super(OrderLineLabelWidget, self).render(*args, **kwargs)))
+
+
+class OrderLineForm(forms.ModelForm):
+    class Meta:
+        model = OrderLine
+        exclude = ('product_content_type', ) 
+    
+    def __init__(self, *args, **kwargs):
+        super(OrderLineForm, self).__init__(*args, **kwargs)
+        self.fields['product_object_id'].widget = OrderLineLabelWidget(model=kwargs.get('instance', None))
+
+
 class OrderLineInline(admin.TabularInline):
     model = OrderLine
-    exclude = ('product_content_type', 'product_object_id') 
     extra = 0
+    form = OrderLineForm
 
 
 

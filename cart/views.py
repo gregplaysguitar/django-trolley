@@ -16,7 +16,7 @@ from utils import form_errors_as_notification, get_order_detail_class
 from django.contrib import messages
 import settings as cart_settings
 from django.utils import importlib
-
+from django.views.decorators.cache import never_cache
 
 
 def index(request):
@@ -46,6 +46,7 @@ def steps():
     )
 
 
+@never_cache
 def checkout(request):
     cart = Cart(request)
     shipping_options_form_cls = shipping_options_form_factory(cart)
@@ -85,6 +86,7 @@ def checkout(request):
     )
 
 
+@never_cache
 def delivery(request):
     cart = Cart(request)
     
@@ -146,6 +148,7 @@ def delivery(request):
     
     
 
+@never_cache
 def payment(request, param=None):
     cart = Cart(request)
 
@@ -187,6 +190,7 @@ def payment(request, param=None):
     """
 
 
+@never_cache
 def complete(request, order_hash):
     cart = Cart(request)
     cart.clear()

@@ -79,10 +79,11 @@ class Order(models.Model):
     last_name = models.CharField(max_length=255)
     email = models.EmailField(default='', blank=True)
     phone = models.CharField(max_length=20, default='', blank=True)
+    mobile_phone = models.CharField(max_length=20, default='', blank=True)
     street_address = models.CharField(max_length=255)
     suburb = models.CharField(max_length=255, blank=True, default='')
     city = models.CharField(max_length=255)
-    post_code = models.PositiveIntegerField()
+    post_code = models.PositiveIntegerField(max_length=20)
     country = models.CharField(max_length=255)
     
     

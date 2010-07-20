@@ -21,7 +21,7 @@ MANAGERS = getattr(
     settings.MANAGERS
 )
 
-ALLOWED_CARD_TYPES = ('Visa', 'Mastercard') # from ('Visa', 'MasterCard', 'American Express', 'Discover')
+ALLOWED_CARD_TYPES = ('Visa', 'MasterCard') # from ('Visa', 'MasterCard', 'American Express', 'Discover')
 
 
 PAYMENT_BACKEND = getattr(

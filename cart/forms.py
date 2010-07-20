@@ -99,14 +99,15 @@ def shipping_options_form_factory(cart):
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = ('first_name', 'last_name', 'email', 'phone', 'street_address', 'suburb', 'city', 'post_code', 'country')
+        fields = ('first_name', 'last_name', 'email', 'phone', 'mobile_phone', 'street_address', 'suburb', 'city', 'post_code', 'country')
 
     def clean(self):
         if not self.cleaned_data.get('email', None) and not self.cleaned_data.get('phone', None):
-            self._errors['email'] = forms.util.ErrorList(['Please enter a phone number or an email address.'])
+            self._errors['email'] = forms.util.ErrorList(['Please enter an email address.'])
         return self.cleaned_data
     
 OrderForm.base_fields['suburb'].required = False
+OrderForm.base_fields['email'].required = True
 
 
 def order_detail_form_factory():

@@ -41,6 +41,7 @@ class CreditCardField(forms.CharField):
             raise forms.ValidationError('Please enter in a valid credit card number.')
         elif self.get_cc_type(value) not in cart_settings.ALLOWED_CARD_TYPES:
             raise forms.ValidationError('Please enter one of the following card types: %s' % (', '.join(cart_settings.ALLOWED_CARD_TYPES)))
+            
         return super(CreditCardField, self).clean(value)
 
 

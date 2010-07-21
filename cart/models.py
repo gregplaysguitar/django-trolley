@@ -180,8 +180,12 @@ class OrderLine(models.Model):
     def __unicode__(self):
         return unicode(self.product)
         super(OrderLine, self).save()
-
-
+    
+    def latest_payment_attempt(self):
+        if self.payment_attempt_set.count():
+            return self.payment_attempt_set.order_by('-creation_date')[0]
+        else:
+            return None
 
 class PaymentAttempt(models.Model):
     order = models.ForeignKey(Order)
@@ -190,10 +194,13 @@ class PaymentAttempt(models.Model):
     transaction_ref = models.CharField(max_length=32, blank=True)
     amount = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     success = models.BooleanField(default=False)
+    creation_date = models.DateTimeField(auto_now_add=True)
     
     def __unicode__(self):
         return "Payment attempt #%s on Order #%s" % (self.pk, self.order.pk)
-        
+    
+    class Meta:
+        ordering = ('-creation_date',)
         
         
 def create_hash(sender, **kwargs):

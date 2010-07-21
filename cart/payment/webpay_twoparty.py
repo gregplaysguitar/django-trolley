@@ -83,6 +83,8 @@ class PaymentBackend:
  
  
     def paymentView(self, request, param, order):
+        error_message = ''
+        
         if request.POST:
             payment_form = CCForm(request.POST)
             if payment_form.is_valid():
@@ -100,9 +102,10 @@ class PaymentBackend:
                 if success:
                     order.payment_successful = True
                     order.save()
-                
-                return HttpResponseRedirect(order.get_absolute_url())
-                
+                    return HttpResponseRedirect(order.get_absolute_url())
+                else:
+                    payment_form = CCForm() # don't bind data to the form since its a CC form
+                    error_message = user_message
         else:
             payment_form = CCForm()
         
@@ -113,6 +116,7 @@ class PaymentBackend:
                 'order': order,
                 'form': payment_form,
                 'cart': Cart(request),
+                'error_message': error_message,
             }),
         )
         

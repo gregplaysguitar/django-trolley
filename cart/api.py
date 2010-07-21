@@ -101,15 +101,6 @@ class Item(DictMixin):
     
     
 class Cart:
-    __single = None # the one, true Singleton
-
-    def __new__(classtype, *args, **kwargs):
-        if classtype != type(classtype.__single):
-            classtype.__single = object.__new__(classtype, *args, **kwargs)
-        return classtype.__single
-    
-    
-    
     def __init__(self, request):
         if not request.session.get(CART_INDEX, False):
             request.session[CART_INDEX] = {}

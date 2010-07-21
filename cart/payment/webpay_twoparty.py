@@ -71,10 +71,12 @@ class PaymentBackend:
             
             success = (response_data['RESPONSECODE'] in self.SUCCESS_RESPONSE_CODES)
             message.append("\n".join(["%s: %s" % (key, response_data[key]) for key in response_data]))
-            return success, response_data['TXNREFERENCE'], "\n".join(message)
+            user_message = webpay.get(webpayRef, "RESPONSETEXT")
+            return success, response_data['TXNREFERENCE'], "\n".join(message), user_message
             
         else:
-            return False, '', "Could not communicate with the payment server" 
+            message = "Could not communicate with the payment server"
+            return False, '', message, message 
         
 
 
@@ -86,10 +88,11 @@ class PaymentBackend:
             if payment_form.is_valid():
                 payment_attempt = order.paymentattempt_set.create()
                 
-                success, transaction_ref, message = self.makePayment(order.total(), order.pk, payment_form.cleaned_data)
+                success, transaction_ref, message, user_message = self.makePayment(order.total(), order.pk, payment_form.cleaned_data)
                 
                 payment_attempt.transaction_ref = transaction_ref
                 payment_attempt.result = message
+                payment_attempt.user_message = user_message
                 payment_attempt.success = success
                 payment_attempt.amount = order.total()
                 payment_attempt.save()

@@ -35,14 +35,18 @@ class PaymentBackend:
         if cart_settings.WEBPAY_CERTIFICATE_PATH:
             webpay.put_CertificatePath(webpayRef, cart_settings.WEBPAY_CERTIFICATE_PATH)
         else:
-            raise PaymentException('Webpay certificate path id not set')
+            raise PaymentException('Webpay certificate path is not set')
         
         if cart_settings.WEBPAY_CERTIFICATE_PASSWORD:
             webpay.put_CertificatePassword(webpayRef, cart_settings.WEBPAY_CERTIFICATE_PASSWORD)
         else:
-            raise PaymentException('Webpay certificate path id not set')
+            raise PaymentException('Webpay certificate password is not set')
         
-        webpay.setPort(webpayRef, "3007")
+        if cart_settings.CART_WEBPAY_PORT:
+            webpay.setPort(webpayRef, cart_settings.CART_WEBPAY_PORT)
+        else:
+            raise PaymentException('Webpay port is not set')
+        
         webpay.setServers(webpayRef, "api01.buylineplus.co.nz,api02.buylineplus.co.nz")
         webpay.put(webpayRef, "INTERFACE", "CREDITCARD")
         webpay.put(webpayRef, "TRANSACTIONTYPE", "PURCHASE")

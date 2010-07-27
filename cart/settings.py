@@ -56,5 +56,10 @@ WEBPAY_CERTIFICATE_PASSWORD = getattr(
     'CART_WEBPAY_CERTIFICATE_PASSWORD',
     None
 )
+WEBPAY_PORT = getattr(
+    settings,
+    'CART_WEBPAY_PORT',
+    None
+)
 
 

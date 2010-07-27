@@ -43,7 +43,7 @@ class PaymentBackend:
             raise PaymentException('Webpay certificate password is not set')
         
         if cart_settings.WEBPAY_PORT:
-            webpay.setPort(webpayRef, cart_settings.WEBPAY_PORT)
+            webpay.setPort(webpayRef, str(cart_settings.WEBPAY_PORT))
         else:
             raise PaymentException('Webpay port is not set')
         

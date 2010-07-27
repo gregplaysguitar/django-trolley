@@ -19,7 +19,7 @@ class PaymentBackend:
     
     SUCCESS_RESPONSE_CODES = ["00", "08", "77"]
     
-    def makePayment(self, amount, ref, data):
+    def makePayment(self, client_id, amount, ref, data):
         message = []
         webpayRef = webpay.newBundle() 
         if cart_settings.PAYMENT_DEBUG:
@@ -29,11 +29,8 @@ class PaymentBackend:
             webpay.put(webpayRef, "DEBUG", "OFF")
         
         webpay.put(webpayRef, "LOGFILE", os.path.join(cart_settings.LOG_DIR, "webpay.log"))
+        webpay.put_ClientID(webpayRef, client_id)
         
-        if cart_settings.WEBPAY_CLIENT_ID:
-            webpay.put_ClientID(webpayRef, cart_settings.WEBPAY_CLIENT_ID)
-        else:
-            raise PaymentException('Payment client id not set')
         
         if cart_settings.WEBPAY_CERTIFICATE_PATH:
             webpay.put_CertificatePath(webpayRef, cart_settings.WEBPAY_CERTIFICATE_PATH)
@@ -90,7 +87,16 @@ class PaymentBackend:
             if payment_form.is_valid():
                 payment_attempt = order.paymentattempt_set.create()
                 
-                success, transaction_ref, message, user_message = self.makePayment(order.total(), order.pk, payment_form.cleaned_data)
+                if callable(cart_settings.WEBPAY_CLIENT_ID):
+                    client_id = cart_settings.WEBPAY_CLIENT_ID(order)
+                elif cart_settings.WEBPAY_CLIENT_ID:
+                    client_id = cart_settings.WEBPAY_CLIENT_ID
+                else:
+                    raise PaymentException('Payment client id not set')
+                
+                
+                #success, transaction_ref, message, user_message = True, 123, "test", "test user message"
+                success, transaction_ref, message, user_message = self.makePayment(client_id, order.total(), order.pk, payment_form.cleaned_data)
                 
                 payment_attempt.transaction_ref = transaction_ref
                 payment_attempt.result = message

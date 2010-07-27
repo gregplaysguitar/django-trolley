@@ -168,9 +168,9 @@ def payment(request, param=None):
     order.status = 'confirmed'
     order.save()
     
-    if cart_settings.PAYMENT_BACKEND.find('.') == -1:
+    try:
         backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
-    else:
+    except ImportError:
         backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
     
    

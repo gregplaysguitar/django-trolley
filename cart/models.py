@@ -75,8 +75,7 @@ ORDER_STATUSES = [
 
 class Order(models.Model):
     hash = models.CharField(max_length=16, unique=True, editable=False)
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
     email = models.EmailField(default='', blank=True)
     phone = models.CharField(max_length=20, default='', blank=True)
     street_address = models.CharField(max_length=255)

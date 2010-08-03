@@ -99,7 +99,7 @@ def shipping_options_form_factory(cart):
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = ('first_name', 'last_name', 'email', 'phone', 'street_address', 'suburb', 'city', 'post_code', 'country')
+        fields = ('name', 'email', 'phone', 'street_address', 'suburb', 'city', 'post_code', 'country')
 
     def clean(self):
         if not self.cleaned_data.get('email', None) and not self.cleaned_data.get('phone', None):

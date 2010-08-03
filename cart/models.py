@@ -104,7 +104,7 @@ class Order(models.Model):
         ordering = ('-creation_date',)
     
     def __unicode__(self):
-        return "Order #%s - %s %s, %s" % (self.pk, self.first_name, self.last_name, self.total())
+        return "Order #%s - %s, %s" % (self.pk, self.name, self.total())
     
     def save(self):
         if (not self.completion_date) and self.status == 'shipped':

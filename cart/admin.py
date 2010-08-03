@@ -47,10 +47,10 @@ class OrderLineInline(admin.TabularInline):
 
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'total_str', 'first_name', 'last_name', 'status', 'payment_successful', 'created', 'shipped')
-    list_display_links = ('id', 'total_str', 'first_name', 'last_name',)
+    list_display = ('id', 'total_str', 'name', 'status', 'payment_successful', 'created', 'shipped')
+    list_display_links = ('id', 'total_str', 'name',)
     list_filter = ('status', 'payment_successful', 'creation_date', 'completion_date')
-    search_fields = ('first_name', 'last_name', 'email',)
+    search_fields = ('name', 'email',)
     inlines = [OrderLineInline, PaymentAttemptInline]
     actions = ('set_status_to_shipped',)
     

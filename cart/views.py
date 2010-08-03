@@ -60,7 +60,10 @@ def checkout(request):
         for item in cart:
             index = 'quantity-%s' % unicode(item.formindex())
             try:
-                quantity = int(request.POST.get(index, item['quantity']) or 0)
+                if str(request.POST.get(index, None)).lower() == 'remove':
+                    quantity = 0
+                else:
+                    quantity = int(request.POST.get(index, item['quantity']) or 0)
                 cart.update(item.product, quantity, item['options'])
             except ValueError:
                 pass

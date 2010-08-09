@@ -16,6 +16,8 @@ from django.contrib.contenttypes import generic
 import string, random
 import decimal
 from utils import get_order_detail_class, OrderDetailNotAvailable
+import settings as cart_settings
+
 
 # Any items to be added to the cart must implement the following interface.
 # CartProductInterface is the minimal one; it does nothing.
@@ -66,11 +68,7 @@ class DefaultCartProductInterface(CartProductInterface):
         return True
 
 
-ORDER_STATUSES = [
-    ('pending', 'Pending'),
-    ('confirmed', 'Confirmed'),
-    ('shipped', 'Shipped'),
-]
+
 
 
 class Order(models.Model):
@@ -85,7 +83,7 @@ class Order(models.Model):
     country = models.CharField(max_length=255)
     
     
-    status = models.CharField(max_length=20, choices=ORDER_STATUSES, default='pending')
+    status = models.CharField(max_length=20, choices=cart_settings.ORDER_STATUSES, default='pending')
     payment_successful = models.BooleanField(default=False)
     notification_sent = models.BooleanField(default=False, editable=False)
     acknowledgement_sent = models.BooleanField(default=False, editable=False)

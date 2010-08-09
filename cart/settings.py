@@ -14,6 +14,16 @@ ORDER_DETAIL_MODEL = getattr(
     None
 )
 
+ORDER_STATUSES = getattr(
+    settings,
+    'CART_ORDER_STATUSES',
+    [
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('shipped', 'Shipped'),
+    ]
+)
+
 
 MANAGERS = getattr(
     settings,

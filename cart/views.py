@@ -71,7 +71,10 @@ def checkout(request):
             except ValueError:
                 pass
         if not request.is_ajax():
-            return HttpResponseRedirect(request.path_info)
+            if request.POST.get('next', False):
+                return HttpResponseRedirect(reverse(delivery))
+            else:
+                return HttpResponseRedirect(request.path_info)
     else:
         checkout_form = checkout_form_cls(initial=cart.detail_data)
         shipping_options_form = shipping_options_form_cls(prefix='shipping', initial=cart.shipping_options)
@@ -135,6 +138,8 @@ def delivery(request):
             
             detail = detail_form.save(commit=False)
             detail.order = order # in case it is being created for the first time
+            for field in cart_settings.CHECKOUT_FORM_FIELDS:
+                setattr(detail, field, cart.detail_data[field])
             detail.save()
             
             cart.data['order_pk'] = order.pk

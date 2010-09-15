@@ -192,7 +192,7 @@ class Cart:
         self.session.modified = True
     
     def get(self, product, options={}):
-        return Item(self.lines[create_cart_index(product, options)], cart)
+        return Item(self.lines[create_cart_index(product, options)], self)
     
     def clear(self):
         for index in self.lines.keys():

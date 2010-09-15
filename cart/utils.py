@@ -25,7 +25,7 @@ def form_errors_as_notification(form):
         if '__all__' in form.errors:
             errors.append(', '.join(form.errors.pop('__all__')))
         for i in form.errors:
-            errors.append("%s: %s" % (i.title(), ', '.join(form.errors[i])))
+            errors.append("%s: %s" % (i.replace('_', ' ').title(), ', '.join(form.errors[i])))
         
         return ', '.join(errors)
     else:

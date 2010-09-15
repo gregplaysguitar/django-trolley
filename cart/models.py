@@ -95,7 +95,7 @@ class Order(models.Model):
     session_id = models.CharField(max_length=32, editable=False)
     
     shipping_cost = models.DecimalField(max_digits=8, decimal_places=2, default=0)
-
+    
     
     
     class Meta:

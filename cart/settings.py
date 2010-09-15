@@ -14,6 +14,16 @@ ORDER_DETAIL_MODEL = getattr(
     None
 )
 
+
+# list of fields to show in the checkout form, eg discount code - 
+# must correpond to fields in the ORDER_DETAIL_MODEL class
+CHECKOUT_FORM_FIELDS = getattr(
+    settings,
+    'CART_CHECKOUT_FORM_FIELDS',
+    None
+) 
+
+
 ORDER_STATUSES = getattr(
     settings,
     'CART_ORDER_STATUSES',

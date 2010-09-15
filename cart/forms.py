@@ -78,6 +78,31 @@ class AddToCartForm(forms.Form):
 
 
 
+def checkout_form_factory():
+    try:
+        order_detail_cls = get_order_detail_class()
+    except OrderDetailNotAvailable:
+        order_detail_cls = None
+
+    if order_detail_cls and cart_settings.CHECKOUT_FORM_FIELDS:
+        class CheckoutForm(forms.ModelForm):
+            class Meta:
+                model = order_detail_cls
+                fields = cart_settings.CHECKOUT_FORM_FIELDS
+            
+            def update(self, cart):
+                for name in self.cleaned_data:
+                    cart.detail_data[name] = self.cleaned_data[name]
+                cart.modified()
+        
+        return CheckoutForm
+    else:
+        class DummyForm(forms.Form):
+            def update(self, cart):
+                pass
+        return DummyForm
+
+
 def shipping_options_form_factory(cart):
     class ShippingOptionsForm(forms.Form):
         def update(self, cart):

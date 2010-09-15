@@ -34,8 +34,9 @@ def create_cart_index(product, options):
 
 
 class Item(DictMixin):
-    def __init__(self, data):
+    def __init__(self, data, cart):
         self.data = {'options': {}}
+        self.cart = cart
         for key in ('product_pk', 'quantity', 'product_content_type_id'):
             if not key in data:
                 raise ItemIntegrityError
@@ -78,9 +79,18 @@ class Item(DictMixin):
     _product = None
     
     
+    def original_row_total(self):
+        if not self._original_row_total:
+            self._original_row_total = self.product.get_price(self.get('quantity', 0), self['options'])
+        return self._original_row_total
+    _original_row_total = None
+    
     def row_total(self):
         if not self._row_total:
-            self._row_total = self.product.get_price(self.get('quantity', 0), self['options'])
+            if hasattr(self.product, 'get_discounted_price'):
+                self._row_total = self.product.get_discounted_price(self.get('quantity', 0), self['options'], self.cart)
+            else:
+                self._row_total = self.original_row_total()
         return self._row_total
     _row_total = None
     
@@ -108,11 +118,14 @@ class Cart:
             request.session[CART_INDEX]['lines'] = {}
         if not request.session[CART_INDEX].get('data'):
             request.session[CART_INDEX]['data'] = {}
+        if not request.session[CART_INDEX].get('detail_data'):
+            request.session[CART_INDEX]['detail_data'] = {}
         if not request.session[CART_INDEX].get('shipping_options'):
             request.session[CART_INDEX]['shipping_options'] = {}
         
         self.lines = request.session[CART_INDEX]['lines']
         self.data = request.session[CART_INDEX]['data']
+        self.detail_data = request.session[CART_INDEX]['detail_data']
         self.shipping_options = request.session[CART_INDEX]['shipping_options']
         self.session = request.session
     
@@ -141,7 +154,7 @@ class Cart:
             'product_content_type_id': ContentType.objects.get_for_model(product).pk,
             'options': options,
             'quantity': quantity
-        })
+        }, self)
         index = item.createindex()
         if not self.lines.get(index, False):
             self.lines[index] = item
@@ -179,7 +192,7 @@ class Cart:
         self.session.modified = True
     
     def get(self, product, options={}):
-        return Item(self.lines[create_cart_index(product, options)])
+        return Item(self.lines[create_cart_index(product, options)], cart)
     
     def clear(self):
         for index in self.lines.keys():

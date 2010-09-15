@@ -8,7 +8,7 @@ from django.template.loader import get_template
 from django.template.loader import render_to_string
 from django.core.mail import send_mail, mail_managers
 from models import Order
-from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory
+from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
 from django.core.urlresolvers import reverse
 from api import Cart, ItemAlreadyExists
 import simplejson
@@ -50,12 +50,15 @@ def steps():
 def checkout(request):
     cart = Cart(request)
     shipping_options_form_cls = shipping_options_form_factory(cart)
-
+    checkout_form_cls = checkout_form_factory()
     
     if request.method == 'POST':
+        checkout_form = checkout_form_cls(request.POST)
         shipping_options_form = shipping_options_form_cls(request.POST, prefix='shipping')
-        if shipping_options_form.is_valid():
+        if checkout_form.is_valid() and shipping_options_form.is_valid():
+            checkout_form.update(cart)
             shipping_options_form.update(cart)
+            
             
         for item in cart:
             index = 'quantity-%s' % unicode(item.formindex())
@@ -70,6 +73,7 @@ def checkout(request):
         if not request.is_ajax():
             return HttpResponseRedirect(request.path_info)
     else:
+        checkout_form = checkout_form_cls(initial=cart.detail_data)
         shipping_options_form = shipping_options_form_cls(prefix='shipping', initial=cart.shipping_options)
         
         
@@ -84,6 +88,7 @@ def checkout(request):
             'cart': cart,
             'steps': steps(),
             'current_step': 1,
+            'checkout_form': checkout_form,
             'shipping_options_form': shipping_options_form,
         })
     )
@@ -92,6 +97,11 @@ def checkout(request):
 @never_cache
 def delivery(request):
     cart = Cart(request)
+    
+    #print cart.data, cart.shipping_options
+    #cart.data['promo_code'] = '123'
+    #cart.data['email'] = '123dssd@gregbrown.co.nz'
+    #cart.modified()
     
     if not cart.is_valid():
         return HttpResponseRedirect(reverse(checkout))
@@ -109,8 +119,8 @@ def delivery(request):
     # get detail form, or dummy form if no ORDER_DETAIL_MODEL defined
     detail_form_cls = order_detail_form_factory()
     
-    form_kwargs = {'label_suffix': '', 'instance': instance}
-    detail_form_kwargs = {'label_suffix': '', 'instance': detail_instance, 'prefix': 'detail'}
+    form_kwargs = {'label_suffix': '', 'instance': instance, 'initial': cart.data}
+    detail_form_kwargs = {'label_suffix': '', 'instance': detail_instance, 'initial': cart.detail_data, 'prefix': 'detail'}
     
     
     if request.POST:

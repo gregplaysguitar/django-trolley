@@ -149,18 +149,18 @@ class Cart:
         return list
     
     def add(self, product, quantity=1, options={}):
-        item = Item({
-            'product_pk': product.pk,
-            'product_content_type_id': ContentType.objects.get_for_model(product).pk,
-            'options': options,
-            'quantity': quantity
-        }, self)
-        index = item.createindex()
+        index = create_cart_index(product, options)
         if not self.lines.get(index, False):
-            self.lines[index] = item
-            self.modified()
+            self.lines[index] = Item({
+                'product_pk': product.pk,
+                'product_content_type_id': ContentType.objects.get_for_model(product).pk,
+                'options': options,
+                'quantity': quantity
+            }, self)
         else:
-            raise ItemAlreadyExists
+            self.lines[index]['quantity'] += quantity
+        
+        self.modified()
             
     def remove(self, *args):
         if isinstance(args[0], Item):

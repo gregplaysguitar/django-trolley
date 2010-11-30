@@ -281,12 +281,11 @@ def add(request, form_class=AddToCartForm):
         return HttpResponseNotAllowed('GET not allowed; POST is required.')
     else:
         form = form_class(request.POST)
+        cart = Cart(request)
+
         if form.is_valid():
-            try:
-                form.add(request)
-                notification = (messages.SUCCESS, 'Product added to cart. <a href="%s">View cart</a>' % (reverse(index)))
-            except ItemAlreadyExists:
-                notification = (messages.ERROR, 'Item is already in your cart. <a href="%s">View cart</a>' % (reverse(index)))
+            form.add(request)
+            notification = (messages.SUCCESS, 'Product was added to your cart. <a href="%s">View cart</a>' % (reverse(index)))
         else:
             notification = (messages.ERROR, 'Could not add product to cart. %s' % form_errors_as_notification(form))
                     
@@ -294,8 +293,6 @@ def add(request, form_class=AddToCartForm):
         
         if request.is_ajax():
             response = HttpResponse()
-            
-            cart = Cart(request)
             
             if form.is_valid():
                 data = {

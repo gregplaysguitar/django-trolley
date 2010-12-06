@@ -176,8 +176,7 @@ class OrderLine(models.Model):
     
     def __unicode__(self):
         return unicode(self.product)
-        super(OrderLine, self).save()
-    
+        
     def latest_payment_attempt(self):
         if self.payment_attempt_set.count():
             return self.payment_attempt_set.order_by('-creation_date')[0]

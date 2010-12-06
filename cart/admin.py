@@ -23,10 +23,10 @@ class OrderLineLabelWidget(forms.widgets.HiddenInput):
         
     def render(self, *args, **kwargs):
         if self.model:
-            text_value = getattr(self.model, 'order_line_description', "%s: %s" % (self.model.product_content_type.app_label.title(), self.model))
+            text_value = getattr(self.model.product, 'order_line_description', "%s: %s" % (self.model.product_content_type.app_label.title(), self.model))
         else:
             text_value = ''
-
+        
         if self.model and hasattr(self.model.product, 'get_absolute_url'):
             return mark_safe('<a href="%s">%s</a>%s' % (self.model.product.get_absolute_url(), text_value, super(OrderLineLabelWidget, self).render(*args, **kwargs)))
         else:

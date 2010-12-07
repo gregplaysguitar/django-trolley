@@ -51,7 +51,7 @@ class OrderLineInline(admin.TabularInline):
 
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'total_str', 'name', 'status', 'payment_successful', 'created', 'shipped')
+    list_display = ('id', 'total_str', 'name', 'status', 'payment_successful', 'created', 'shipped', 'products',)
     list_display_links = ('id', 'total_str', 'name',)
     list_filter = ('status', 'payment_successful', 'creation_date', 'completion_date')
     search_fields = ('name', 'email',)
@@ -63,7 +63,16 @@ class OrderAdmin(admin.ModelAdmin):
             return datetime.datetime.strftime(instance.creation_date, '%Y-%m-%d')
         else:
             return 'N/A'
+    
+    def products(self, instance):
+        products = []
+        for order in instance.orderline_set.all():
+            if order.product not in products:
+                products.append(order.product)
+            
+        return ', '.join([unicode(p) for p in products])
 
+    
     def shipped(self, instance):
         if instance.completion_date:
             return datetime.datetime.strftime(instance.completion_date, '%Y-%m-%d')

@@ -14,7 +14,7 @@ import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 import string, random
-import decimal
+import decimal, simplejson
 from utils import get_order_detail_class, OrderDetailNotAvailable
 import settings as cart_settings
 
@@ -170,12 +170,18 @@ class OrderLine(models.Model):
     quantity = models.IntegerField(default=1)
     # total price for the line, not per-unit
     price = models.DecimalField(max_digits=8, decimal_places=2)
+    options = models.TextField(blank=True, default='', editable=False)
+    
+    def options_text(self):
+        options = simplejson.loads(self.options)
+        return ", ".join([options[key] for key in options])
+    
     
     class Meta:
         pass
     
     def __unicode__(self):
-        return unicode(self.product)
+        return unicode(self.product) + (" (%s)" % self.options_text() if self.options else '')
         
     def latest_payment_attempt(self):
         if self.payment_attempt_set.count():

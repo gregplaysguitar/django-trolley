@@ -182,6 +182,7 @@ def payment(request, param=None):
             product=item.product,
             quantity=item['quantity'],
             price=item.row_total(),
+            options=simplejson.dumps(item['options'])
         )
     order.status = 'confirmed'
     order.save()

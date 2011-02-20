@@ -2,7 +2,7 @@
 
 from django import template
 import locale
-from easy_tag import easy_tag
+from cart.utils import easy_tag
 
 from cart.forms import AddToCartForm
 from cart.api import Cart

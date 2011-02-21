@@ -85,6 +85,7 @@ def checkout(request):
     else:
         template = 'cart/checkout.html'
     
+    
     return render_to_response(
         template,
         RequestContext(request, {
@@ -135,12 +136,14 @@ def delivery(request):
             order.shipping_cost = cart.shipping_cost()
             order.save()
             
-            
-            detail = detail_form.save(commit=False)
-            detail.order = order # in case it is being created for the first time
-            for field in cart_settings.CHECKOUT_FORM_FIELDS:
-                setattr(detail, field, cart.detail_data[field])
-            detail.save()
+            # if the form has no 'save' method, assume it's the dummy form
+            if callable(getattr(detail_form, 'save', None)):
+                detail = detail_form.save(commit=False)
+                detail.order = order # in case it is being created for the first time
+                for field in cart_settings.CHECKOUT_FORM_FIELDS:
+                    setattr(detail, field, cart.detail_data[field])
+                detail.save()
+                
             
             cart.data['order_pk'] = order.pk
             cart.modified()

@@ -145,4 +145,7 @@ def order_detail_form_factory():
         return OrderDetailForm
     except OrderDetailNotAvailable:
         # dummy form class with no fields, to simplify the view
-        return forms.Form
+        class DummyForm(forms.Form):
+            def __init__(self, instance, *args, **kwargs):
+                super(DummyForm, self).__init__(*args, **kwargs)
+        return DummyForm

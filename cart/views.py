@@ -274,8 +274,45 @@ def clear(request):
             return response
         else:
             messages.add_message(request, *notification)
-            return HttpResponseRedirect(request.POST.get('redirect_to', reverse(index)))
+            return HttpResponseRedirect(request.POST.get('redirect_to', reverse(checkout)))
   
+
+
+@never_cache
+def update(request):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed('GET not allowed; POST is required.')
+    else:
+        cart = Cart(request)
+        for item in cart:
+            index = 'quantity-%s' % unicode(item.formindex())
+            if index in request.POST:
+                try:
+                    quantity = int(request.POST[index])
+                    cart.update(item.product, quantity, item['options'])
+                except ValueError:
+                    pass
+        
+        notification = (messages.SUCCESS, 'Cart updated. <a href="%s">View cart</a>' % (reverse(checkout)))
+        
+        if request.is_ajax():
+            response = HttpResponse()
+            
+            data = {
+                'cart': cart.as_dict(),
+                'notification': notification,
+            }
+               
+            response.write(simplejson.dumps(data))
+                
+            return response
+        else:
+            messages.add_message(request, *notification)
+            return HttpResponseRedirect(request.POST.get('redirect_to', reverse(checkout)))
+
+
+    
+
 
 def add(request, form_class=AddToCartForm):
     """add a product to the cart
@@ -289,7 +326,7 @@ def add(request, form_class=AddToCartForm):
 
         if form.is_valid():
             form.add(request)
-            notification = (messages.SUCCESS, 'Product was added to your cart. <a href="%s">View cart</a>' % (reverse(index)))
+            notification = (messages.SUCCESS, 'Product was added to your cart. <a href="%s">View cart</a>' % (reverse(checkout)))
         else:
             notification = (messages.ERROR, 'Could not add product to cart. %s' % form_errors_as_notification(form))
                     
@@ -319,7 +356,7 @@ def add(request, form_class=AddToCartForm):
             messages.add_message(request, *notification)
 
             if form.is_valid():
-                return HttpResponseRedirect(request.POST.get('redirect_to', reverse(index)))
+                return HttpResponseRedirect(request.POST.get('redirect_to', reverse(checkout)))
             else:
-                return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse(index)))
+                return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse(checkout)))
 

@@ -140,6 +140,16 @@ class Cart:
                 pass
 
     
+    def as_dict(self):
+        data = {}
+        for item in self:
+            line = dict(item)
+            line['product'] = str(item.product())
+            line['original_row_total'] = item.original_row_total()
+            line['row_total'] = item.row_total()
+            data[item.formindex] = line
+        return data
+    
     def ctype_list(self):
         list = []
         for item in self:

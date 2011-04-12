@@ -14,5 +14,6 @@ urlpatterns = patterns('cart.views',
 
     (r'^add/$', 'add', {}, 'cart_add'),
     (r'^clear/$', 'clear', {}, 'cart_clear'),
+    (r'^update/$', 'update', {}, 'cart_update'),
     
 )

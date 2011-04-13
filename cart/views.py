@@ -48,122 +48,120 @@ def steps():
 
 @never_cache
 def checkout(request):
-    cart = Cart(request)
-    shipping_options_form_cls = shipping_options_form_factory(cart)
-    checkout_form_cls = checkout_form_factory()
-    
-    if request.method == 'POST':
-        checkout_form = checkout_form_cls(request.POST)
-        shipping_options_form = shipping_options_form_cls(request.POST, prefix='shipping')
-        if checkout_form.is_valid() and shipping_options_form.is_valid():
-            checkout_form.update(cart)
-            shipping_options_form.update(cart)
-            
-            
-        for item in cart:
-            index = 'quantity-%s' % unicode(item.formindex())
-            try:
-                if str(request.POST.get(index, None)).lower() == 'remove':
-                    quantity = 0
+    if cart_settings.SKIP_CHECKOUT:
+        return HttpResponseRedirect(steps()[1][0])
+    else:
+        cart = Cart(request)
+        shipping_options_form_cls = shipping_options_form_factory(cart)
+        checkout_form_cls = checkout_form_factory()
+        
+        if request.method == 'POST':
+            checkout_form = checkout_form_cls(request.POST)
+            shipping_options_form = shipping_options_form_cls(request.POST, prefix='shipping')
+            if checkout_form.is_valid() and shipping_options_form.is_valid():
+                checkout_form.update(cart)
+                shipping_options_form.update(cart)
+                
+                
+            for item in cart:
+                index = 'quantity-%s' % unicode(item.formindex())
+                try:
+                    if str(request.POST.get(index, None)).lower() == 'remove':
+                        quantity = 0
+                    else:
+                        quantity = int(request.POST.get(index, item['quantity']) or 0)
+                    cart.update(item.product, quantity, item['options'])
+                except ValueError:
+                    pass
+            if not request.is_ajax():
+                if request.POST.get('next', False):
+                    return HttpResponseRedirect(reverse(delivery))
                 else:
-                    quantity = int(request.POST.get(index, item['quantity']) or 0)
-                cart.update(item.product, quantity, item['options'])
-            except ValueError:
-                pass
-        if not request.is_ajax():
-            if request.POST.get('next', False):
-                return HttpResponseRedirect(reverse(delivery))
-            else:
-                return HttpResponseRedirect(request.path_info)
-    else:
-        checkout_form = checkout_form_cls(initial=cart.detail_data)
-        shipping_options_form = shipping_options_form_cls(prefix='shipping', initial=cart.shipping_options)
+                    return HttpResponseRedirect(request.path_info)
+        else:
+            checkout_form = checkout_form_cls(initial=cart.detail_data)
+            shipping_options_form = shipping_options_form_cls(prefix='shipping', initial=cart.shipping_options)
+            
+            
+        if request.is_ajax():
+            template = 'cart/checkout_ajax.html'
+        else:
+            template = 'cart/checkout.html'
         
         
-    if request.is_ajax():
-        template = 'cart/checkout_ajax.html'
-    else:
-        template = 'cart/checkout.html'
-    
-    
-    return render_to_response(
-        template,
-        RequestContext(request, {
-            'cart': cart,
-            'steps': steps(),
-            'current_step': 1,
-            'checkout_form': checkout_form,
-            'shipping_options_form': shipping_options_form,
-        })
-    )
+        return render_to_response(
+            template,
+            RequestContext(request, {
+                'cart': cart,
+                'steps': steps(),
+                'current_step': 1,
+                'checkout_form': checkout_form,
+                'shipping_options_form': shipping_options_form,
+            })
+        )
 
 
 @never_cache
 def delivery(request):
     cart = Cart(request)
     
-    #print cart.data, cart.shipping_options
-    #cart.data['promo_code'] = '123'
-    #cart.data['email'] = '123dssd@gregbrown.co.nz'
-    #cart.modified()
-    
     if not cart.is_valid():
         return HttpResponseRedirect(reverse(checkout))
-    
-    try:
-        instance = Order.objects.get(pk=cart.data.get('order_pk', None))
-        try:
-            detail_instance = instance.get_detail()
-        except get_order_detail_class().DoesNotExist:
-            detail_instance = None
-    except Order.DoesNotExist:
-        instance = None
-        detail_instance = None
-    
-    # get detail form, or dummy form if no ORDER_DETAIL_MODEL defined
-    detail_form_cls = order_detail_form_factory()
-    
-    form_kwargs = {'label_suffix': '', 'instance': instance, 'initial': cart.data}
-    detail_form_kwargs = {'label_suffix': '', 'instance': detail_instance, 'initial': cart.detail_data, 'prefix': 'detail'}
-    
-    
-    if request.POST:
-        form = OrderForm(request.POST, **form_kwargs)
-        detail_form = detail_form_cls(request.POST, **detail_form_kwargs)
-        if form.is_valid() and detail_form.is_valid():
-            order = form.save(commit=False)
-            order.session_id = request.session.session_key
-            order.shipping_cost = cart.shipping_cost()
-            order.save()
-            
-            # if the form has no 'save' method, assume it's the dummy form
-            if callable(getattr(detail_form, 'save', None)):
-                detail = detail_form.save(commit=False)
-                detail.order = order # in case it is being created for the first time
-                for field in cart_settings.CHECKOUT_FORM_FIELDS:
-                    setattr(detail, field, cart.detail_data[field])
-                detail.save()
-                
-            
-            cart.data['order_pk'] = order.pk
-            cart.modified()
-            return HttpResponseRedirect(reverse('cart.views.payment'))
-
     else:
-        form = OrderForm(**form_kwargs)
-        detail_form = detail_form_cls(**detail_form_kwargs)
-
-
-    return render_to_response(
-        'cart/delivery.html', 
-        RequestContext(request, {
-            'cart': cart,
-            'form': form,
-            'detail_form': detail_form,
-            'steps': steps(),
-            'current_step': 2,
-        })
-    )
+        try:
+            instance = Order.objects.get(pk=cart.data.get('order_pk', None))
+            try:
+                detail_instance = instance.get_detail()
+            except get_order_detail_class().DoesNotExist:
+                detail_instance = None
+        except Order.DoesNotExist:
+            instance = None
+            detail_instance = None
+        
+        # get detail form, or dummy form if no ORDER_DETAIL_MODEL defined
+        detail_form_cls = order_detail_form_factory()
+        
+        form_kwargs = {'label_suffix': '', 'instance': instance, 'initial': cart.data}
+        detail_form_kwargs = {'label_suffix': '', 'instance': detail_instance, 'initial': cart.detail_data, 'prefix': 'detail'}
+        
+        
+        if request.POST:
+            form = OrderForm(request.POST, **form_kwargs)
+            detail_form = detail_form_cls(request.POST, **detail_form_kwargs)
+            if form.is_valid() and detail_form.is_valid():
+                order = form.save(commit=False)
+                order.session_id = request.session.session_key
+                order.shipping_cost = cart.shipping_cost()
+                order.save()
+                
+                # if the form has no 'save' method, assume it's the dummy form
+                if callable(getattr(detail_form, 'save', None)):
+                    detail = detail_form.save(commit=False)
+                    detail.order = order # in case it is being created for the first time
+                    for field in cart_settings.CHECKOUT_FORM_FIELDS:
+                        setattr(detail, field, cart.detail_data[field])
+                    detail.save()
+                    
+                
+                cart.data['order_pk'] = order.pk
+                cart.modified()
+                return HttpResponseRedirect(reverse('cart.views.payment'))
+    
+        else:
+            form = OrderForm(**form_kwargs)
+            detail_form = detail_form_cls(**detail_form_kwargs)
+    
+    
+        return render_to_response(
+            'cart/delivery.html', 
+            RequestContext(request, {
+                'cart': cart,
+                'form': form,
+                'detail_form': detail_form,
+                'steps': steps(),
+                'current_step': 2,
+            })
+        )
     
     
     
@@ -344,6 +342,7 @@ def add(request, form_class=AddToCartForm):
                     'product_quantity': cart.get(form.get_product(), form.get_options())['quantity'],
                     'checkout_url': reverse('cart.views.checkout'),
                     'cart_url': reverse('cart.views.index'),
+                    'cart': cart.as_dict(),
                     #'cart_count': cart.total(),
                 }
             else:

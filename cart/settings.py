@@ -23,6 +23,7 @@ CHECKOUT_FORM_FIELDS = getattr(
     None
 ) 
 
+SKIP_CHECKOUT = getattr(settings, 'CART_SKIP_CHECKOUT', False)
 
 ORDER_STATUSES = getattr(
     settings,

@@ -64,7 +64,7 @@ def checkout(request):
                 
                 
             for item in cart:
-                index = 'quantity-%s' % unicode(item.formindex())
+                index = 'quantity-%s' % unicode(item.formindex)
                 try:
                     if str(request.POST.get(index, None)).lower() == 'remove':
                         quantity = 0
@@ -283,7 +283,7 @@ def update(request):
     else:
         cart = Cart(request)
         for item in cart:
-            index = 'quantity-%s' % unicode(item.formindex())
+            index = 'quantity-%s' % unicode(item.formindex)
             if index in request.POST:
                 try:
                     quantity = int(request.POST[index])
@@ -331,26 +331,22 @@ def add(request, form_class=AddToCartForm):
         
         
         if request.is_ajax():
-            response = HttpResponse()
-            
+            data = {
+                'notification': notification,
+                'cart': cart.as_dict(),
+                'checkout_url': reverse('cart.views.checkout'),
+                'cart_url': reverse('cart.views.index'),
+            }
             if form.is_valid():
-                data = {
-                    'notification': notification,
+                data.update({
+                    'success': True,
                     'product_pk': form.get_product().pk,
                     'product_name': form.get_product().name,
                     'product_quantity_added': form.get_quantity(),
                     'product_quantity': cart.get(form.get_product(), form.get_options())['quantity'],
-                    'checkout_url': reverse('cart.views.checkout'),
-                    'cart_url': reverse('cart.views.index'),
-                    'cart': cart.as_dict(),
-                    #'cart_count': cart.total(),
-                }
-            else:
-                data = {}
-               
-            response.write(simplejson.dumps(data))
+                })
                 
-            return response
+            return HttpResponse(simplejson.dumps(data), mimetype='application/json')
         else:
             messages.add_message(request, *notification)
 

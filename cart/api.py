@@ -78,6 +78,10 @@ class Item(DictMixin):
         return self._product
     _product = None
     
+    def update_quantity(self, q):
+        self['quantity'] = q
+        self._original_row_total = None
+        self._row_total = None
     
     def original_row_total(self):
         if not self._original_row_total:
@@ -103,30 +107,24 @@ class Item(DictMixin):
     def createindex(self):
         return create_cart_index(self.product, self['options'])
     
+    @property
     def formindex(self):
         return hashlib.md5(unicode(self.createindex())).hexdigest()
 
     def options_text(self):
         return ", ".join([self['options'][key] for key in self['options']])
-    
+  
     
 class Cart:
     def __init__(self, request):
-        if not request.session.get(CART_INDEX, False):
+        if not request.session.get(CART_INDEX, None):
             request.session[CART_INDEX] = {}
-        if not request.session[CART_INDEX].get('lines'):
-            request.session[CART_INDEX]['lines'] = {}
-        if not request.session[CART_INDEX].get('data'):
-            request.session[CART_INDEX]['data'] = {}
-        if not request.session[CART_INDEX].get('detail_data'):
-            request.session[CART_INDEX]['detail_data'] = {}
-        if not request.session[CART_INDEX].get('shipping_options'):
-            request.session[CART_INDEX]['shipping_options'] = {}
         
-        self.lines = request.session[CART_INDEX]['lines']
-        self.data = request.session[CART_INDEX]['data']
-        self.detail_data = request.session[CART_INDEX]['detail_data']
-        self.shipping_options = request.session[CART_INDEX]['shipping_options']
+        for index in ('lines', 'data', 'detail_data', 'shipping_options'):
+            if index not in request.session[CART_INDEX]:
+                request.session[CART_INDEX][index] = {}
+            setattr(self, index, request.session[CART_INDEX][index])
+       
         self.session = request.session
     
     def __iter__(self):
@@ -144,9 +142,9 @@ class Cart:
         data = {}
         for item in self:
             line = dict(item)
-            line['product'] = str(item.product())
-            line['original_row_total'] = item.original_row_total()
-            line['row_total'] = item.row_total()
+            line['product'] = str(item.product)
+            line['original_row_total'] = str(item.original_row_total())
+            line['row_total'] = str(item.row_total())
             data[item.formindex] = line
         return data
     
@@ -168,7 +166,7 @@ class Cart:
                 'quantity': quantity
             }, self)
         else:
-            self.lines[index]['quantity'] += quantity
+            self.lines[index].update_quantity(self.lines[index]['quantity'] + quantity)
         
         self.modified()
             
@@ -191,7 +189,7 @@ class Cart:
         q = int(quantity or 0)
         try:
             if q:
-                self.lines[create_cart_index(product, options)]['quantity'] = q
+                self.lines[create_cart_index(product, options)].update_quantity(q) 
             else:
                 self.remove(product, options)
             self.modified()

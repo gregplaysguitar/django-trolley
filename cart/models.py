@@ -194,7 +194,7 @@ class PaymentAttempt(models.Model):
     hash = models.CharField(max_length=16, unique=True, editable=False)
     result = models.TextField(default='', blank=True)
     user_message = models.TextField(default='', blank=True)
-    transaction_ref = models.CharField(max_length=32, blank=True)
+    transaction_ref = models.CharField(max_length=32, blank=True, default='')
     amount = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     success = models.BooleanField(default=False)
     creation_date = models.DateTimeField(auto_now_add=True)

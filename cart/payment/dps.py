@@ -30,63 +30,54 @@ class PaymentBackend:
             
             result = []
             xml = ElementTree.fromstring(string)
+            success = (xml.find('Success').text == '1')
+            
             for el in xml:
                 result.append("%s: %s" % (el.tag, el.text))
             payment_attempt.result = '\n'.join(result)
-            payment_attempt.transaction_ref = xml.find('DpsTxnRef').text
+            payment_attempt.transaction_ref = xml.find('DpsTxnRef').text or ''
+            payment_attempt.success = success
+            payment_attempt.amount = xml.find('AmountSettlement').text or 0
             payment_attempt.save()
                 
-            order.payment_successful = (xml.find('Success').text == '1')
+            order.payment_successful = success
             order.save()
             
-            
-                
-            return HttpResponseRedirect(order.get_absolute_url())
-        else:
-            
-            payment_attempt = order.paymentattempt_set.create()
-           
-            host = 'http://' + request.META['HTTP_HOST']
-            
-            amount = "%.2f" % order.total()
-            values = {
-                'GenerateRequest': {
-                    'PxPayUserId': settings.PXPAY_USERID,
-                    'PxPayKey': settings.PXPAY_KEY,
-                    'AmountInput': amount,
-                    'CurrencyInput' : 'NZD',
-                    'MerchantReference': 'Transaction #%s' % order.pk,
-                    'EmailAddress': order.email,
-                    'TxnData1': order.street_address,
-                    'TxnData2': order.suburb,
-                    'TxnData3': order.city,
-                    'TxnType': 'Purchase',
-                    'TxnId': payment_attempt.hash,
-                    'UrlSuccess': host + reverse('cart.views.payment', args=(payment_attempt.hash,)),
-                    'UrlFail': host + reverse('cart.views.payment', args=(payment_attempt.hash,)),
-                    #'Opt': None,
-                    #'BillingId': 0,
-                    #'EnableAddBillCard': 0,
-                }
+            if success:
+                return HttpResponseRedirect(order.get_absolute_url())
+    
+        
+        payment_attempt = order.paymentattempt_set.create()
+        
+        host = 'http://' + request.META['HTTP_HOST']
+        
+        amount = "%.2f" % order.total()
+        values = {
+            'GenerateRequest': {
+                'PxPayUserId': settings.PXPAY_USERID,
+                'PxPayKey': settings.PXPAY_KEY,
+                'AmountInput': amount,
+                'CurrencyInput' : 'NZD',
+                'MerchantReference': 'Transaction #%s' % order.pk,
+                'EmailAddress': order.email,
+                'TxnData1': order.street_address,
+                'TxnData2': order.suburb,
+                'TxnData3': order.city,
+                'TxnType': 'Purchase',
+                'TxnId': payment_attempt.hash,
+                'UrlSuccess': host + reverse('cart.views.payment', args=(payment_attempt.hash,)),
+                'UrlFail': host + reverse('cart.views.payment', args=(payment_attempt.hash,)),
             }
-            #print values, ElementTree.tostring(ConvertDictToXml(values))
-            
-            
-            req = urllib2.Request(settings.PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
-            response = urllib2.urlopen(req)
-            
-            string =  response.read()
-            #print string
-            
-            xml = ElementTree.fromstring(string)
-            
-            return HttpResponseRedirect(xml.find('URI').text)
-            
-    
-    
-
-
-
+        }
+        
+        req = urllib2.Request(settings.PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
+        response = urllib2.urlopen(req)
+        
+        string =  response.read()
+        xml = ElementTree.fromstring(string)
+        
+        return HttpResponseRedirect(xml.find('URI').text)
+        
 
 
 

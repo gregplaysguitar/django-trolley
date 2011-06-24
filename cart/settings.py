@@ -20,7 +20,7 @@ ORDER_DETAIL_MODEL = getattr(
 CHECKOUT_FORM_FIELDS = getattr(
     settings,
     'CART_CHECKOUT_FORM_FIELDS',
-    None
+    []
 ) 
 
 SKIP_CHECKOUT = getattr(settings, 'CART_SKIP_CHECKOUT', False)

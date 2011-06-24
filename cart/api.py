@@ -85,14 +85,14 @@ class Item(DictMixin):
     
     def original_row_total(self):
         if not self._original_row_total:
-            self._original_row_total = self.product.get_price(self.get('quantity', 0), self['options'])
+            self._original_row_total = decimal.Decimal(self.product.get_price(self.get('quantity', 0), self['options']))
         return self._original_row_total
     _original_row_total = None
     
     def row_total(self):
         if not self._row_total:
             if hasattr(self.product, 'get_discounted_price'):
-                self._row_total = self.product.get_discounted_price(self.get('quantity', 0), self['options'], self.cart)
+                self._row_total = decimal.Decimal(self.product.get_discounted_price(self.get('quantity', 0), self['options'], self.cart))
             else:
                 self._row_total = self.original_row_total()
         return self._row_total

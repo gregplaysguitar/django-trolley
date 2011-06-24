@@ -141,7 +141,7 @@ def order_detail_form_factory():
         class OrderDetailForm(forms.ModelForm):
             class Meta:
                 model = model_cls
-                exclude = ['order'] + (cart_settings.CHECKOUT_FORM_FIELDS or [])
+                exclude = ['order'] + (cart_settings.CHECKOUT_FORM_FIELDS)
         return OrderDetailForm
     except OrderDetailNotAvailable:
         # dummy form class with no fields, to simplify the view

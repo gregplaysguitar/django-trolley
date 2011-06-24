@@ -61,8 +61,7 @@ def checkout(request):
             if checkout_form.is_valid() and shipping_options_form.is_valid():
                 checkout_form.update(cart)
                 shipping_options_form.update(cart)
-                
-                
+            
             for item in cart:
                 index = 'quantity-%s' % unicode(item.formindex)
                 try:

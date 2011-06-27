@@ -94,7 +94,7 @@ class Order(models.Model):
     completion_date = models.DateTimeField(null=True, blank=True, help_text="Leave blank to auto-fill this field")
     session_id = models.CharField(max_length=32, editable=False)
     
-    shipping_cost = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     
     
@@ -169,7 +169,7 @@ class OrderLine(models.Model):
 
     quantity = models.IntegerField(default=1)
     # total price for the line, not per-unit
-    price = models.DecimalField(max_digits=8, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
     options = models.TextField(blank=True, default='', editable=False)
     
     def options_text(self):
@@ -195,7 +195,7 @@ class PaymentAttempt(models.Model):
     result = models.TextField(default='', blank=True)
     user_message = models.TextField(default='', blank=True)
     transaction_ref = models.CharField(max_length=32, blank=True, default='')
-    amount = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     success = models.BooleanField(default=False)
     creation_date = models.DateTimeField(auto_now_add=True)
     

@@ -58,7 +58,9 @@ def checkout(request):
         if request.method == 'POST':
             checkout_form = checkout_form_cls(request.POST)
             shipping_options_form = shipping_options_form_cls(request.POST, prefix='shipping')
-            if checkout_form.is_valid() and shipping_options_form.is_valid():
+            valid = checkout_form.is_valid() and shipping_options_form.is_valid()
+            
+            if valid:
                 checkout_form.update(cart)
                 shipping_options_form.update(cart)
             
@@ -72,24 +74,40 @@ def checkout(request):
                     cart.update(item.product, quantity, item['options'])
                 except ValueError:
                     pass
-            if not request.is_ajax():
-                if request.POST.get('next', False):
-                    return HttpResponseRedirect(reverse(delivery))
-                else:
-                    return HttpResponseRedirect(request.path_info)
+                    
+          
+            if request.POST.get('next', False):
+                redirect_url = reverse(delivery)
+            else:
+                redirect_url = request.path_info
+            
+            if request.is_ajax():
+                html = render_to_string(
+                    'cart/checkout_ajax.html',
+                    RequestContext(request, {
+                        'cart': cart,
+                        'steps': steps(),
+                        'current_step': 1,
+                        'checkout_form': checkout_form,
+                        'shipping_options_form': shipping_options_form,
+                    })
+                )
+                    
+                return HttpResponse(simplejson.dumps({
+                    'success': valid,
+                    'redirect_url': redirect_url if valid else None,
+                    'html': html,
+                }), mimetype='application/json')
+
+            elif valid:
+                return HttpResponseRedirect(redirect_url)
         else:
             checkout_form = checkout_form_cls(initial=cart.detail_data)
             shipping_options_form = shipping_options_form_cls(prefix='shipping', initial=cart.shipping_options)
-            
-            
-        if request.is_ajax():
-            template = 'cart/checkout_ajax.html'
-        else:
-            template = 'cart/checkout.html'
-        
+
         
         return render_to_response(
-            template,
+            'cart/checkout.html',
             RequestContext(request, {
                 'cart': cart,
                 'steps': steps(),
@@ -127,7 +145,8 @@ def delivery(request):
         if request.POST:
             form = OrderForm(request.POST, **form_kwargs)
             detail_form = detail_form_cls(request.POST, **detail_form_kwargs)
-            if form.is_valid() and detail_form.is_valid():
+            valid = form.is_valid() and detail_form.is_valid()
+            if valid:
                 order = form.save(commit=False)
                 order.session_id = request.session.session_key
                 order.shipping_cost = cart.shipping_cost()
@@ -144,8 +163,32 @@ def delivery(request):
                 
                 cart.data['order_pk'] = order.pk
                 cart.modified()
-                return HttpResponseRedirect(reverse('cart.views.payment'))
-    
+                
+                
+            redirect_url = reverse('cart.views.payment')
+            
+            if request.is_ajax():
+                html = render_to_string(
+                    'cart/delivery_ajax.html',
+                    RequestContext(request, {
+                        'cart': cart,
+                        'form': form,
+                        'detail_form': detail_form,
+                        'steps': steps(),
+                        'current_step': 2,
+                    })
+                )
+                    
+                return HttpResponse(simplejson.dumps({
+                    'success': valid,
+                    'redirect_url': redirect_url if valid else None,
+                    'hard_redirect': True,
+                    'html': html,
+                }), mimetype='application/json')
+
+            elif valid:
+                return HttpResponseRedirect(redirect_url)
+                
         else:
             form = OrderForm(**form_kwargs)
             detail_form = detail_form_cls(**detail_form_kwargs)

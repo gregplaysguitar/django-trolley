@@ -230,26 +230,21 @@ def payment(request, param=None):
     order.status = 'confirmed'
     order.save()
     
-    try:
-        backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
-    except ImportError:
-        backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
+    if order.total():
+        try:
+            backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
+        except ImportError:
+            backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
+        
+       
+        backend = backend_module.PaymentBackend()
+        
+        return backend.paymentView(request, param, order)
+    else:
+        order.payment_successful = True
+        order.save()
+        return HttpResponseRedirect(order.get_absolute_url())
     
-   
-    backend = backend_module.PaymentBackend()
-    
-    return backend.paymentView(request, param, order)
-    
-    
-    """
-    return render_to_response(
-        'cart/payment.html', 
-        RequestContext(request, {
-            'steps': steps(),
-            'current_step': 3,
-        })
-    )
-    """
 
 
 @never_cache

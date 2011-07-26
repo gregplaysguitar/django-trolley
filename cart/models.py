@@ -38,7 +38,7 @@ class CartProductInterface(object):
         raise NotImplementedError()
 
     @staticmethod
-    def get_shipping_cost(items, options={}):
+    def get_shipping_cost(items, cart):
         raise NotImplementedError()
     
     @staticmethod
@@ -56,7 +56,7 @@ class DefaultCartProductInterface(CartProductInterface):
         return None
 
     @staticmethod
-    def get_shipping_cost(items, options={}):
+    def get_shipping_cost(items, cart):
         return 0
 
     @staticmethod

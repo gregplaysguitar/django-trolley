@@ -86,48 +86,51 @@ class PaymentBackend:
     def paymentView(self, request, param, order):
         error_message = ''
         
-        if request.POST:
-            payment_form = CCForm(request.POST)
-            if payment_form.is_valid():
-                payment_attempt = order.paymentattempt_set.create()
-                
-                if callable(cart_settings.WEBPAY_CLIENT_ID):
-                    client_id = cart_settings.WEBPAY_CLIENT_ID(order)
-                elif cart_settings.WEBPAY_CLIENT_ID:
-                    client_id = cart_settings.WEBPAY_CLIENT_ID
-                else:
-                    raise PaymentException('Payment client id not set')
-                
-                
-                #success, transaction_ref, message, user_message = True, 123, "test", "test user message"
-                success, transaction_ref, message, user_message = self.makePayment(client_id, order.total(), order.pk, payment_form.cleaned_data)
-                
-                payment_attempt.transaction_ref = transaction_ref
-                payment_attempt.result = message
-                payment_attempt.user_message = user_message
-                payment_attempt.success = success
-                payment_attempt.amount = order.total()
-                payment_attempt.save()
-                
-                if success:
-                    order.payment_successful = True
-                    order.save()
-                    return HttpResponseRedirect(order.get_absolute_url())
-                else:
-                    payment_form = CCForm() # don't bind data to the form since its a CC form
-                    error_message = user_message
+        if order.payment_successful == True:
+            return HttpResponseRedirect(order.get_absolute_url())
         else:
-            payment_form = CCForm()
-        
-        
-        return render_to_response(
-            'cart/payment.html',
-            RequestContext(request, {
-                'order': order,
-                'form': payment_form,
-                'cart': Cart(request),
-                'error_message': error_message,
-            }),
-        )
-        
+            if request.POST:
+                payment_form = CCForm(request.POST)
+                if payment_form.is_valid():
+                    payment_attempt = order.paymentattempt_set.create()
+                    
+                    if callable(cart_settings.WEBPAY_CLIENT_ID):
+                        client_id = cart_settings.WEBPAY_CLIENT_ID(order)
+                    elif cart_settings.WEBPAY_CLIENT_ID:
+                        client_id = cart_settings.WEBPAY_CLIENT_ID
+                    else:
+                        raise PaymentException('Payment client id not set')
+                    
+                    
+                    #success, transaction_ref, message, user_message = True, 123, "test", "test user message"
+                    success, transaction_ref, message, user_message = self.makePayment(client_id, order.total(), order.pk, payment_form.cleaned_data)
+                    
+                    payment_attempt.transaction_ref = transaction_ref
+                    payment_attempt.result = message
+                    payment_attempt.user_message = user_message
+                    payment_attempt.success = success
+                    payment_attempt.amount = order.total()
+                    payment_attempt.save()
+                    
+                    if success:
+                        order.payment_successful = True
+                        order.save()
+                        return HttpResponseRedirect(order.get_absolute_url())
+                    else:
+                        payment_form = CCForm() # don't bind data to the form since its a CC form
+                        error_message = user_message
+            else:
+                payment_form = CCForm()
+            
+            
+            return render_to_response(
+                'cart/payment.html',
+                RequestContext(request, {
+                    'order': order,
+                    'form': payment_form,
+                    'cart': Cart(request),
+                    'error_message': error_message,
+                }),
+            )
+            
         

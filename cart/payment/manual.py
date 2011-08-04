@@ -18,6 +18,9 @@ class PaymentBackend:
     
     def paymentView(self, request, param, order):
         if request.POST:
+            
+            #import time;time.sleep(10)
+            
             payment_form = CCForm(request.POST)
             if payment_form.is_valid():
                 

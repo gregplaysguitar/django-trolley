@@ -1,0 +1,9 @@
+Order details:
+{% for line in order.orderline_set.all %}
+{{ line.quantity }}x {{ line.product }} {% if line.product.product_code %}({{ line.product.product_code }}){% endif %} {{ line.options_text }} @ ${{ line.price|floatformat:2 }}{% endfor %}
+
+Total: ${{ order.total|floatformat:2 }}
+Order status: {{ order.get_status_display }}
+Payment status: {% if order.payment_successful %}PAID{% else %}UNPAID{% endif %}
+
+To view the order, go to http://{{ request.META.HTTP_HOST }}{{ order.get_admin_url }}

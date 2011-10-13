@@ -1,0 +1,14 @@
+Thanks for your order. 
+
+You purchased:
+{% for line in order.orderline_set.all %}
+{{ line.quantity }}x {{ line.product }} {% if line.product.product_code %}({{ line.product.product_code }}){% endif %} {{ line.options_text }}  ${{ line.price|floatformat:2 }}
+{% endfor %}
+
+Shipping ${{ order.shipping_cost|floatformat:2 }}
+Total payment received: ${{ order.total|floatformat:2 }} including GST
+
+Your order number is: {{ order.pk }}
+
+Regards,
+Demo Shop

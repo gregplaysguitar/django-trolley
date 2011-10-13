@@ -1,0 +1,55 @@
+{% extends 'shop/base.html' %}
+{% load url from future %}
+
+
+
+{% block content %}
+
+
+    <h2>Your Order</h2>
+
+    <form method="post" action="." class="custom">
+    {% csrf_token %}
+
+    <ul>
+        {% for item in cart %}
+            <li class="clearfix">
+                <input type="text" class="quantity" name="quantity-{{ item.formindex }}" value="{{ item.quantity }}">
+            
+                <a href="{{ item.product.get_absolute_url }}">
+                    {{ item.product.name }}
+                </a>
+                <span class="options">
+                    {% firstof item.options_text '' %}
+                </span>
+                <span class="linetotal">${{ item.row_total|floatformat:2 }}</span>
+             </li>
+        {% empty %}
+            <li><a href="{% url 'shop.views.index' %}">No items</a></li>
+        {% endfor %}
+    </ul>
+    
+
+    <div>
+        {{ shipping_options_form.non_field_errors }}
+ 
+        {{ shipping_options_form.as_p }}
+        
+        <div class="amount">
+            <span>Shipping</span>
+            ${{ cart.shipping_cost|floatformat:2 }}
+        </div>
+    </div>
+    <div class="total">
+        <div>Total ${{ cart.total|floatformat:2 }}</div>
+    </div>
+    
+    
+    {% if cart.lines|length %}
+        <input type="submit" value="Update">
+        <input type="submit" name="next" value="Next: Delivery Details">
+    {% endif %}
+    
+    </form>
+
+{% endblock %}

@@ -1,28 +1,32 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+from datetime import datetime
+from decimal import Decimal
 
 from django import forms
 from django.shortcuts import render_to_response
 from django.template import RequestContext as Context
 from django.contrib.formtools.wizard import FormWizard
-from models import Order
-from datetime import datetime
-from decimal import Decimal
-
-from cart import settings as cart_settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from api import Cart
 from django.forms.formsets import formset_factory
+
+import settings as cart_settings
 from utils import get_order_detail_class, OrderDetailNotAvailable
+from api import Cart
+from models import Order
 
     
 product_type_queryset = ContentType.objects.filter(
     reduce(Q.__or__, [Q(app_label=t[0], model=t[1]) for t in cart_settings.PRODUCT_TYPES])
 )
 
-#print product_type_queryset, cart_settings.PRODUCT_TYPES
+
 
 class AddToCartForm(forms.Form):
+    """A generic form for adding a product to a cart - should post to 
+       cart.views.add"""
     product_type = forms.ModelChoiceField(
         queryset=product_type_queryset,
         widget=forms.widgets.HiddenInput()
@@ -79,6 +83,9 @@ class AddToCartForm(forms.Form):
 
 
 def checkout_form_factory():
+    """Returns a form corresponding to a subset of the ORDER_DETAIL_MODEL, if 
+       one is specified and CHECKOUT_FORM_FIELDS is set. Otherwise returns a 
+       dummy form."""
     try:
         order_detail_cls = get_order_detail_class()
     except OrderDetailNotAvailable:
@@ -104,6 +111,8 @@ def checkout_form_factory():
 
 
 def shipping_options_form_factory(cart):
+    """Returns a shipping options form based on the options derived
+       from the cart contents."""
     class ShippingOptionsForm(forms.Form):
         def update(self, cart):
             for name in self.cleaned_data:
@@ -122,6 +131,7 @@ def shipping_options_form_factory(cart):
 
 
 class OrderForm(forms.ModelForm):
+    """Standard order information form."""
     class Meta:
         model = Order
         fields = ('name', 'email', 'phone', 'street_address', 'suburb', 'city', 'post_code', 'country')
@@ -136,6 +146,8 @@ OrderForm.base_fields['email'].required = True
 
 
 def order_detail_form_factory():
+    """Returns a form for the extra custom details defined in ORDER_DETAIL_MODEL.
+       Excludes those displayed in the checkout via CHECKOUT_FORM_FIELDS."""
     try:
         model_cls = get_order_detail_class()
         class OrderDetailForm(forms.ModelForm):

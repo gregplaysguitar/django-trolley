@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import simplejson
+
 from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response, get_object_or_404
@@ -7,36 +9,23 @@ from django.conf import settings
 from django.template.loader import get_template
 from django.template.loader import render_to_string
 from django.core.mail import send_mail, mail_managers
-from models import Order
-from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
 from django.core.urlresolvers import reverse
-from api import Cart, ItemAlreadyExists
-import simplejson
-from utils import form_errors_as_notification, get_order_detail_class
 from django.contrib import messages
-import settings as cart_settings
 from django.utils import importlib
 from django.views.decorators.cache import never_cache
+
+from api import Cart, ItemAlreadyExists
+from utils import form_errors_as_notification, get_order_detail_class
+import settings as cart_settings
+from models import Order
+from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
+
 
 
 def index(request):
     return HttpResponseRedirect(reverse(checkout))
     
-    """
-    if request.is_ajax():
-        template = 'cart/index_ajax.html',
-    else:
-        template = 'cart/index.html',
-        
-    cart = Cart(request)
-            
-    return render_to_response(
-        template, 
-        RequestContext(request, {
-            'cart': cart,
-        })
-    )
-    """
+    
 
 def steps():
     return (
@@ -48,6 +37,9 @@ def steps():
 
 @never_cache
 def checkout(request):
+    """Display a list of cart items, quantities, total etc, with the option
+       to change quantities, specify shipping options etc."""
+       
     if cart_settings.SKIP_CHECKOUT:
         return HttpResponseRedirect(steps()[1][0])
     else:
@@ -120,6 +112,8 @@ def checkout(request):
 
 @never_cache
 def delivery(request):
+    """Collects standard delivery information, along with any extra information
+       from the order_detail model."""
     cart = Cart(request)
     
     if not cart.is_valid():
@@ -211,6 +205,7 @@ def delivery(request):
 
 @never_cache
 def payment(request, param=None):
+    """Handle payments using the specified backend."""
     cart = Cart(request)
 
     try:
@@ -232,9 +227,10 @@ def payment(request, param=None):
     
     if order.total():
         try:
-            backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
-        except ImportError:
             backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
+        except ImportError:
+            # Try old format for backwards-compatibility
+            backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
         
        
         backend = backend_module.PaymentBackend()
@@ -249,6 +245,7 @@ def payment(request, param=None):
 
 @never_cache
 def complete(request, order_hash):
+    """Display completed order information."""
     cart = Cart(request)
     cart.clear()
     order = get_object_or_404(Order, hash=order_hash)
@@ -295,6 +292,7 @@ def complete(request, order_hash):
 
 
 def clear(request):
+    """Remove all items from the cart."""
     if request.method != 'POST':
         return HttpResponseNotAllowed('GET not allowed; POST is required.')
     else:
@@ -315,6 +313,7 @@ def clear(request):
 
 @never_cache
 def update(request):
+    """Update cart quantities."""
     if request.method != 'POST':
         return HttpResponseNotAllowed('GET not allowed; POST is required.')
     else:
@@ -350,7 +349,7 @@ def update(request):
 
 
 def add(request, form_class=AddToCartForm):
-    """add a product to the cart
+    """Add a product to the cart
     POST data should include content_type_id, 
     """
     if request.method != 'POST':

@@ -30,6 +30,7 @@ class CartNode(template.Node):
 @register.tag
 @easy_tag
 def get_cart(_tag, _as, varname):
+    """Gets the cart instance."""
     return CartNode(varname)
 
 
@@ -66,6 +67,11 @@ class AddToCartFormNode(template.Node):
 @register.tag
 @easy_tag
 def get_add_to_cart_form(_tag, *args, **kwargs):
+    """Gets an AddToCartForm for the specified product - e.g.
+           
+           {% get_add_to_cart_form for instance as varname %}
+       
+       """
     return AddToCartFormNode(*args, **kwargs)
 
 

@@ -31,27 +31,43 @@ import settings as cart_settings
 class CartProductInterface(object):
     """Minimal CartProductInterface implementation, raising NotImplementedError
     for all required methods."""
+    
     def get_thumbnail(self, options={}):
+        """Returns an image instance for the product""" 
         raise NotImplementedError()
 
     def get_price(self, quantity, options={}):
+        """Returns product price, given the quantity added and options"""
         raise NotImplementedError()
 
     @staticmethod
     def get_shipping_cost(items, cart):
+        """Returns shipping cost for the whole cart, given a list of items and 
+           cart instance. If multiple "product" models are in use, the shipping
+           cost will be calculated for each and the sum used."""
         raise NotImplementedError()
     
     @staticmethod
     def get_available_shipping_options(items):
+        """Returns a list of shipping options for the given items, each of the
+           form
+               
+               (key, name, choices)
+               
+           where "choices" is a list of key,value pairs in the usual django
+           format.""" 
         raise NotImplementedError()
     
     @staticmethod
     def verify_purchase(items):
+        """Raises a CartIntegrityError if the purchase is not allowed."""
         raise NotImplementedError()
+
 
 class DefaultCartProductInterface(CartProductInterface):
     """CartProductInterface interface implementation, giving sensible defaults for
     all required methods."""
+    
     def get_thumbnail(self, options={}):
         return None
 
@@ -72,6 +88,8 @@ class DefaultCartProductInterface(CartProductInterface):
 
 
 class Order(models.Model):
+    """Stores information that should apply to every purchase."""
+    
     hash = models.CharField(max_length=16, unique=True, editable=False)
     name = models.CharField(max_length=255)
     email = models.EmailField(default='', blank=True)
@@ -145,22 +163,10 @@ class Order(models.Model):
         return self._detail_cache
     
     
-    """
-    def has_shipped(self):
-        return bool(self.shipped)
-    has_shipped.boolean = True
-    has_shipped.short_description = 'Shipped'
-    has_shipped.admin_order_field = 'shipped'
-    
-    def shipping_cost(self):
-        return Decimal(str(SHIP_BASE)) + Decimal(self.shipping_base) + sum(line.shipping_cost() for line in self.orderline_set.all())
-
-    def shipping_cost_str(self, prefix='$'):
-        return u"%s%.2f" % (prefix, self.shipping_cost())
-    
-    """
 
 class OrderLine(models.Model):
+    """Stores information about a single product/options combination for an order."""
+    
     order = models.ForeignKey(Order)
     
     product_content_type = models.ForeignKey(ContentType)
@@ -190,6 +196,8 @@ class OrderLine(models.Model):
             return None
 
 class PaymentAttempt(models.Model):
+    """Stores information about each attempted payment for an order."""
+    
     order = models.ForeignKey(Order)
     hash = models.CharField(max_length=16, unique=True, editable=False)
     result = models.TextField(default='', blank=True)

@@ -1,27 +1,18 @@
 from django.conf import settings
-import settings as cart_settings
 from django.db import models
 from django import template
 
-
-## UTIL FUNCTIONS FOR CART STUFF
-
-"""
-def cart_total(cart):
-    #number of items in cart. Duplicates are counted separately.
-    return sum(cart.values())
-
-def mk_subject(text):
-    return "%s%s" % (settings.EMAIL_SUBJECT_PREFIX, text)
-"""
+import settings as cart_settings
 
 
 class OrderDetailNotAvailable(Exception):
+    """Raised if an ORDER_DETAIL_MODEL has not been specified."""
     pass
 
 
 
 def form_errors_as_notification(form):
+    """Display form errors in plain text format, for display via ajax."""
     if form.errors:
         errors = []
         if '__all__' in form.errors:
@@ -36,6 +27,7 @@ def form_errors_as_notification(form):
 
 
 def get_order_detail_class():
+    """Get the specified ORDER_DETAIL_MODEL, or raise an exception."""
     if not getattr(cart_settings, 'ORDER_DETAIL_MODEL', False):
         raise OrderDetailNotAvailable
     else:
@@ -50,7 +42,7 @@ def get_order_detail_class():
 
 
 def easy_tag(func):
-    """deal with the repetitive parts of parsing template tags"""
+    """Deal with the repetitive parts of parsing template tags."""
     def inner(parser, token):
         # divide token into args and kwargs
         args = []

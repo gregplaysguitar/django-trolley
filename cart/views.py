@@ -15,7 +15,7 @@ from django.utils import importlib
 from django.views.decorators.cache import never_cache
 
 from api import Cart, ItemAlreadyExists
-from utils import form_errors_as_notification, get_order_detail_class
+from utils import form_errors_as_notification, get_order_detail_class, get_current_site
 import settings as cart_settings
 from models import Order
 from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
@@ -25,14 +25,31 @@ from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order
 def index(request):
     return HttpResponseRedirect(reverse(checkout))
     
+
+def validate_cart(request, view):
+    cart = Cart(request)
+    if view == 'delivery':
+        return cart.is_valid()
+    elif view == 'payment':
+        return bool(Order.objects.filter(pk=cart.data.get('order_pk', None)).count())
     
 
-def steps():
-    return (
-        (reverse('cart.views.checkout'), 'Review Order'),
-        (reverse('cart.views.delivery'), 'Delivery Details'),
-        (reverse('cart.views.payment'), 'Payment Details'), 
-    )
+def steps(request):
+    steps = []
+    
+    if not cart_settings.SKIP_CHECKOUT:
+        steps.append((reverse('cart.views.checkout'), 'Review Order'))
+    
+    for step in [
+        ('delivery', 'Delivery Details'),
+        ('payment', 'Payment Details')
+    ]:
+        if validate_cart(request, step[0]):
+            steps.append((reverse('cart.views.%s' % step[0]), step[1]))
+        else:
+            steps.append((None, step[1]))
+
+    return steps
 
 
 @never_cache
@@ -41,7 +58,7 @@ def checkout(request):
        to change quantities, specify shipping options etc."""
        
     if cart_settings.SKIP_CHECKOUT:
-        return HttpResponseRedirect(steps()[1][0])
+        return HttpResponseRedirect(reverse('cart.views.delivery'))
     else:
         cart = Cart(request)
         shipping_options_form_cls = shipping_options_form_factory(cart)
@@ -78,7 +95,7 @@ def checkout(request):
                     'cart/checkout_ajax.html',
                     RequestContext(request, {
                         'cart': cart,
-                        'steps': steps(),
+                        'steps': steps(request),
                         'current_step': 1,
                         'checkout_form': checkout_form,
                         'shipping_options_form': shipping_options_form,
@@ -102,7 +119,7 @@ def checkout(request):
             'cart/checkout.html',
             RequestContext(request, {
                 'cart': cart,
-                'steps': steps(),
+                'steps': steps(request),
                 'current_step': 1,
                 'checkout_form': checkout_form,
                 'shipping_options_form': shipping_options_form,
@@ -116,7 +133,7 @@ def delivery(request):
        from the order_detail model."""
     cart = Cart(request)
     
-    if not cart.is_valid():
+    if not validate_cart(request, 'delivery'):
         return HttpResponseRedirect(reverse(checkout))
     else:
         try:
@@ -168,7 +185,7 @@ def delivery(request):
                         'cart': cart,
                         'form': form,
                         'detail_form': detail_form,
-                        'steps': steps(),
+                        'steps': steps(request),
                         'current_step': 2,
                     })
                 )
@@ -194,7 +211,7 @@ def delivery(request):
                 'cart': cart,
                 'form': form,
                 'detail_form': detail_form,
-                'steps': steps(),
+                'steps': steps(request),
                 'current_step': 2,
             })
         )
@@ -208,38 +225,39 @@ def payment(request, param=None):
     """Handle payments using the specified backend."""
     cart = Cart(request)
 
-    try:
-        order = Order.objects.get(pk=cart.data.get('order_pk', None))
-    except Order.DoesNotExist:
-        return HttpResponseRedirect(reverse('cart.views.checkout'))
-    
-    for line in order.orderline_set.all():
-        line.delete()
-    for item in cart:
-        order.orderline_set.create(
-            product=item.product,
-            quantity=item['quantity'],
-            price=item.row_total(),
-            options=simplejson.dumps(item['options'])
-        )
-    order.status = 'confirmed'
-    order.save()
-    
-    if order.total():
-        try:
-            backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
-        except ImportError:
-            # Try old format for backwards-compatibility
-            backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
-        
-       
-        backend = backend_module.PaymentBackend()
-        
-        return backend.paymentView(request, param, order)
+    if not validate_cart(request, 'payment'):
+        return HttpResponseRedirect(reverse('cart.views.delivery'))
     else:
-        order.payment_successful = True
+        # Assume this will work since validate_cart returned True
+        order = Order.objects.get(pk=cart.data['order_pk'])
+        
+        for line in order.orderline_set.all():
+            line.delete()
+        for item in cart:
+            order.orderline_set.create(
+                product=item.product,
+                quantity=item['quantity'],
+                price=item.row_total(),
+                options=simplejson.dumps(item['options'])
+            )
+        order.status = 'confirmed'
         order.save()
-        return HttpResponseRedirect(order.get_absolute_url())
+        
+        if order.total():
+            try:
+                backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
+            except ImportError:
+                # Try old format for backwards-compatibility
+                backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
+            
+           
+            backend = backend_module.PaymentBackend()
+            
+            return backend.paymentView(request, param, order)
+        else:
+            order.payment_successful = True
+            order.save()
+            return HttpResponseRedirect(order.get_absolute_url())
     
 
 
@@ -251,13 +269,28 @@ def complete(request, order_hash):
     order = get_object_or_404(Order, hash=order_hash)
     
     if (not order.notification_sent or not order.acknowledgement_sent) and order.payment_successful:
-        acknowledge_body = render_to_string('cart/email/order_acknowledge.txt',
-            RequestContext(request, {'order': order}))
-        acknowledge_subject = render_to_string('cart/email/order_acknowledge_subject.txt',
-                RequestContext(request, {'order': order}))
+        acknowledge_body = render_to_string(
+            'cart/email/order_acknowledge.txt',
+            RequestContext(request, {
+                'order': order,
+                'site': get_current_site(),
+            })
+        )
+        acknowledge_subject = render_to_string(
+            'cart/email/order_acknowledge_subject.txt',
+            RequestContext(request, {
+                'order': order,
+                'site': get_current_site(),
+            })
+        )
 
-        notify_body = render_to_string('cart/email/order_notify.txt',
-            RequestContext(request, {'order': order}))
+        notify_body = render_to_string(
+            'cart/email/order_notify.txt',
+            RequestContext(request, {
+                'order': order,
+                'site': get_current_site(),
+            })
+        )
 
         def TMP_send_messages():
             if order.email and not order.acknowledgement_sent:

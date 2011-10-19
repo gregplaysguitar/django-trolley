@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 
-from django.conf import settings
 import urllib, urllib2
+
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django import forms
+
 from cart import settings as cart_settings
 from cart.payment_forms import CCForm
 from cart.api import Cart
-
-
+from cart.views import steps
 
 
 class PaymentBackend:
@@ -49,6 +50,7 @@ class PaymentBackend:
                 'order': order,
                 'form': payment_form,
                 'cart': Cart(request),
+                'steps': steps(request),
             }),
         )
         

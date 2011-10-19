@@ -1,8 +1,16 @@
 from django.conf import settings
 from django.db import models
 from django import template
+from django.contrib.sites.models import Site
 
 import settings as cart_settings
+
+
+def get_current_site():
+    try:
+        return Site.objects.get_current()
+    except Site.DoesNotExist:
+        return None
 
 
 class OrderDetailNotAvailable(Exception):

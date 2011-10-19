@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
+import os
+import urllib, urllib2
 
 from django.conf import settings
-import urllib, urllib2
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django import forms
+
+import webpay
+
+from cart.payment import PaymentException
+from cart.views import steps
 from cart import settings as cart_settings
 from cart.payment_forms import CCForm
 from cart.api import Cart
-import webpay
-import os
-from cart.payment import PaymentException
-
 
 class PaymentBackend:
     
@@ -130,6 +132,7 @@ class PaymentBackend:
                     'form': payment_form,
                     'cart': Cart(request),
                     'error_message': error_message,
+                    'steps': steps(request),
                 }),
             )
             

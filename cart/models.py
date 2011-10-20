@@ -1,29 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import datetime, string, random, decimal, simplejson
 
-#from django.utils.translation import ugettext_lazy as _
 from django.db import models
-#from django.conf import settings
-#from tagging.fields import TagField
-#from django.db.models import permalink
-
-#import copy
-#from decimal import Decimal
-import datetime
-
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-import string, random
-import decimal, simplejson
+
 from utils import get_order_detail_class, OrderDetailNotAvailable
 import settings as cart_settings
-
-
-# Any items to be added to the cart must implement the following interface.
-# CartProductInterface is the minimal one; it does nothing.
-# DefaultCartProductInterface implements sensible defaults.
-
-
 
 
 
@@ -62,7 +46,16 @@ class CartProductInterface(object):
     def verify_purchase(items):
         """Raises a CartIntegrityError if the purchase is not allowed."""
         raise NotImplementedError()
+    
+    
+    # optional methods
+    
+    @staticmethod
+    def complete_purchase(orderlines, order):
+        """Called on purchase completion for each item in the order."""
+        pass
 
+    
 
 class DefaultCartProductInterface(CartProductInterface):
     """CartProductInterface interface implementation, giving sensible defaults for
@@ -115,7 +108,6 @@ class Order(models.Model):
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     
-    
     class Meta:
         ordering = ('-creation_date',)
     
@@ -127,9 +119,23 @@ class Order(models.Model):
             self.completion_date = datetime.datetime.now()
         if (not self.payment_date) and self.payment_successful:
             self.payment_date = datetime.datetime.now()
+            self.complete_purchase()
         
         super(Order, self).save()
 
+    def complete_purchase(self):
+        groups = {}
+        for line in self.orderline_set.all():
+            ctype = ContentType.objects.get_for_model(line.product)
+            if not groups.get(ctype.pk, None):
+                groups[ctype.pk] = []
+                
+            groups[ctype.pk].append(line)
+            
+        for ctype_pk in groups:
+            ContentType.objects.get(pk=ctype_pk).model_class().complete_purchase(groups[ctype_pk], self)
+           
+        
     
     def total(self):
         return sum(line.price for line in self.orderline_set.all()) + self.shipping_cost
@@ -161,7 +167,6 @@ class Order(models.Model):
             except OrderDetailNotAvailable:
                 self._detail_cache = None
         return self._detail_cache
-    
     
 
 class OrderLine(models.Model):

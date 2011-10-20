@@ -57,6 +57,8 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = ('name', 'email',)
     inlines = [OrderLineInline, PaymentAttemptInline]
     actions = ('set_status_to_shipped',)
+    save_on_top = True
+    
     
     def created(self, instance):
         if instance.creation_date:

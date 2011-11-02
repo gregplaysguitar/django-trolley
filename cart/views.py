@@ -128,7 +128,7 @@ def checkout(request):
 
 
 @never_cache
-def delivery(request):
+def delivery(request, order_form_cls=OrderForm):
     """Collects standard delivery information, along with any extra information
        from the order_detail model."""
     cart = Cart(request)
@@ -154,7 +154,7 @@ def delivery(request):
         
         
         if request.POST:
-            form = OrderForm(request.POST, **form_kwargs)
+            form = order_form_cls(request.POST, **form_kwargs)
             detail_form = detail_form_cls(request.POST, **detail_form_kwargs)
             valid = form.is_valid() and detail_form.is_valid()
             if valid:
@@ -201,7 +201,7 @@ def delivery(request):
                 return HttpResponseRedirect(redirect_url)
                 
         else:
-            form = OrderForm(**form_kwargs)
+            form = order_form_cls(**form_kwargs)
             detail_form = detail_form_cls(**detail_form_kwargs)
     
     

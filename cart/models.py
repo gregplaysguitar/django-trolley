@@ -119,7 +119,8 @@ class Order(models.Model):
             self.completion_date = datetime.datetime.now()
         if (not self.payment_date) and self.payment_successful:
             self.payment_date = datetime.datetime.now()
-            self.complete_purchase()
+            
+        self.complete_purchase()
         
         super(Order, self).save()
 

@@ -141,8 +141,11 @@ class OrderForm(forms.ModelForm):
             self._errors['email'] = forms.util.ErrorList(['Please enter an email address.'])
         return self.cleaned_data
     
-OrderForm.base_fields['suburb'].required = False
-OrderForm.base_fields['email'].required = True
+    def __init__(self, *args, **kwargs):
+        super(OrderForm, self).__init__(*args, **kwargs)
+        for f in ('name', 'email', 'street_address', 'city', 'post_code', 'country'):
+            if f in self.fields:
+                self.fields[f].required = True
 
 
 def order_detail_form_factory():

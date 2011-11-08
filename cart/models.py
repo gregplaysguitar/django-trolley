@@ -84,14 +84,14 @@ class Order(models.Model):
     """Stores information that should apply to every purchase."""
     
     hash = models.CharField(max_length=16, unique=True, editable=False)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, default='', blank=True)
     email = models.EmailField(default='', blank=True)
     phone = models.CharField(max_length=20, default='', blank=True)
-    street_address = models.CharField(max_length=255)
+    street_address = models.CharField(max_length=255, blank=True, default='')
     suburb = models.CharField(max_length=255, blank=True, default='')
-    city = models.CharField(max_length=255)
-    post_code = models.CharField(max_length=20)
-    country = models.CharField(max_length=255)
+    city = models.CharField(max_length=255, blank=True, default='')
+    post_code = models.CharField(max_length=20, blank=True, default='')
+    country = models.CharField(max_length=255, blank=True, default='')
     
     
     status = models.CharField(max_length=20, choices=cart_settings.ORDER_STATUSES, default='pending')

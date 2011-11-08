@@ -10,26 +10,60 @@ from django.shortcuts import render_to_response, get_object_or_404
 
 class PaymentBackend:
     
+    def pxrequest(self, values):
+        req = urllib2.Request(settings.PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
+        response = urllib2.urlopen(req)
+        
+        string =  response.read()
+        
+        return ElementTree.fromstring(string)
+    
+    
+    def read_result(self, result):
+        values = {
+            'ProcessResponse': {
+                'PxPayUserId': settings.PXPAY_USERID,
+                'PxPayKey': settings.PXPAY_KEY,
+                'Response': result,
+            }
+        }
+        return self.pxrequest(values)
+    
+    
+    def payment_request(self, amount, merchant_ref, email, txn_id, return_url, txn_data=[]):
+        values = {
+            'PxPayUserId': settings.PXPAY_USERID,
+            'PxPayKey': settings.PXPAY_KEY,
+            'TxnType': 'Purchase',
+            'CurrencyInput' : 'NZD',
+
+            'AmountInput': amount,
+            'MerchantReference': merchant_ref,
+            'EmailAddress': email,                
+            'TxnId': txn_id,
+            'UrlSuccess': return_url,
+            'UrlFail': return_url,
+        }
+        count = 1
+        for val in txn_data[:3]:
+            values['TxnData%s' % count] = val
+            count += 1
+        
+        return self.pxrequest({
+            'GenerateRequest': values,
+        })
+
+    
+    
     def paymentView(self, request, param, order):
         
         if param:
  
             payment_attempt = get_object_or_404(order.paymentattempt_set, hash=param)
                 
-            values = {
-                'ProcessResponse': {
-                    'PxPayUserId': settings.PXPAY_USERID,
-                    'PxPayKey': settings.PXPAY_KEY,
-                    'Response': request.GET.get('result'),
-                }
-            }
-            req = urllib2.Request(settings.PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
-            response = urllib2.urlopen(req)
-            
-            string =  response.read()
+            xml = self.read_result(request.GET.get('result'))
             
             result = []
-            xml = ElementTree.fromstring(string)
             success = (xml.find('Success').text == '1')
             
             for el in xml:
@@ -49,32 +83,22 @@ class PaymentBackend:
         
         payment_attempt = order.paymentattempt_set.create()
         
-        host = 'http://' + request.META['HTTP_HOST']
+        return_url = 'http://%s%s' % (request.META['HTTP_HOST'], reverse('cart.views.payment', args=(payment_attempt.hash,)))
         
         amount = "%.2f" % order.total()
-        values = {
-            'GenerateRequest': {
-                'PxPayUserId': settings.PXPAY_USERID,
-                'PxPayKey': settings.PXPAY_KEY,
-                'AmountInput': amount,
-                'CurrencyInput' : 'NZD',
-                'MerchantReference': 'Transaction #%s' % order.pk,
-                'EmailAddress': order.email,
-                'TxnData1': order.street_address,
-                'TxnData2': order.suburb,
-                'TxnData3': order.city,
-                'TxnType': 'Purchase',
-                'TxnId': payment_attempt.hash,
-                'UrlSuccess': host + reverse('cart.views.payment', args=(payment_attempt.hash,)),
-                'UrlFail': host + reverse('cart.views.payment', args=(payment_attempt.hash,)),
-            }
-        }
         
-        req = urllib2.Request(settings.PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
-        response = urllib2.urlopen(req)
-        
-        string =  response.read()
-        xml = ElementTree.fromstring(string)
+        xml = self.payment_request(
+            amount=amount,
+            merchant_ref='Transaction #%s' % order.pk,
+            email=order.email,
+            txn_id=payment_attempt.hash,
+            return_url=return_url,
+            txn_data=[
+                order.street_address,
+                order.suburb,
+                order.city,
+            ],
+        )    
         
         return HttpResponseRedirect(xml.find('URI').text)
         

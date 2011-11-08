@@ -131,6 +131,7 @@ def checkout(request):
 def delivery(request, order_form_cls=OrderForm):
     """Collects standard delivery information, along with any extra information
        from the order_detail model."""
+    
     cart = Cart(request)
     
     if not validate_cart(request, 'delivery'):

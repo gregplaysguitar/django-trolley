@@ -11,6 +11,7 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
 
     url(r'^cart/', include('cart.urls')),
+    url(r'^payment/', include('payment.urls')),
     url(r'^', include('shop.urls')),
 
 )

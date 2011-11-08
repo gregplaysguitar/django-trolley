@@ -162,6 +162,18 @@ def delivery(request, order_form_cls=OrderForm):
                 order = form.save(commit=False)
                 order.session_id = request.session.session_key
                 order.shipping_cost = cart.shipping_cost()
+                
+                for line in order.orderline_set.all():
+                    line.delete()
+                for item in cart:
+                    order.orderline_set.create(
+                        product=item.product,
+                        quantity=item['quantity'],
+                        price=item.row_total(),
+                        options=simplejson.dumps(item['options'])
+                    )
+                order.status = 'confirmed'
+                
                 order.save()
                 
                 # if the form has no 'save' method, assume it's the dummy form
@@ -171,14 +183,14 @@ def delivery(request, order_form_cls=OrderForm):
                     for field in cart_settings.CHECKOUT_FORM_FIELDS:
                         setattr(detail, field, cart.detail_data[field])
                     detail.save()
-                    
                 
                 cart.data['order_pk'] = order.pk
                 cart.modified()
                 
+                redirect_url = reverse('cart.views.payment', args=(order.hash,))
+            else:
+                redirect_url = None
                 
-            redirect_url = reverse('cart.views.payment')
-            
             if request.is_ajax():
                 html = render_to_string(
                     'cart/delivery_ajax.html',
@@ -193,7 +205,7 @@ def delivery(request, order_form_cls=OrderForm):
                     
                 return HttpResponse(simplejson.dumps({
                     'success': valid,
-                    'redirect_url': redirect_url if valid else None,
+                    'redirect_url': redirect_url,
                     'hard_redirect': True,
                     'html': html,
                 }), mimetype='application/json')
@@ -222,44 +234,37 @@ def delivery(request, order_form_cls=OrderForm):
     
 
 @never_cache
-def payment(request, param=None):
+def payment(request, order_hash=None, param=None):
     """Handle payments using the specified backend."""
-    cart = Cart(request)
-
-    if not validate_cart(request, 'payment'):
-        return HttpResponseRedirect(reverse('cart.views.delivery'))
-    else:
-        # Assume this will work since validate_cart returned True
-        order = Order.objects.get(pk=cart.data['order_pk'])
-        
-        for line in order.orderline_set.all():
-            line.delete()
-        for item in cart:
-            order.orderline_set.create(
-                product=item.product,
-                quantity=item['quantity'],
-                price=item.row_total(),
-                options=simplejson.dumps(item['options'])
-            )
-        order.status = 'confirmed'
-        order.save()
-        
-        if order.total():
-            try:
-                backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
-            except ImportError:
-                # Try old format for backwards-compatibility
-                backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
-            
-           
-            backend = backend_module.PaymentBackend()
-            
-            return backend.paymentView(request, param, order)
-        else:
-            order.payment_successful = True
-            order.save()
-            return HttpResponseRedirect(order.get_absolute_url())
     
+    if order_hash:
+        order = get_object_or_404(Order, hash=order_hash)
+    else:
+        cart = Cart(request)
+
+        if not validate_cart(request, 'payment'):
+            return HttpResponseRedirect(reverse('cart.views.delivery'))
+        else:
+            # Assume this will work since validate_cart returned True
+            order = Order.objects.get(pk=cart.data['order_pk'])
+            return HttpResponseRedirect(reverse('cart.views.payment', args=(order.hash,)))
+        
+    if order.total():
+        try:
+            backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
+        except ImportError:
+            # Try old format for backwards-compatibility
+            backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
+        
+       
+        backend = backend_module.PaymentBackend()
+        
+        return backend.paymentView(request, param, order)
+    else:
+        order.payment_successful = True
+        order.save()
+        return HttpResponseRedirect(order.get_absolute_url())
+
 
 
 @never_cache

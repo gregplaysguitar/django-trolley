@@ -83,7 +83,7 @@ class PaymentBackend:
         
         payment_attempt = order.paymentattempt_set.create()
         
-        return_url = 'http://%s%s' % (request.META['HTTP_HOST'], reverse('cart.views.payment', args=(payment_attempt.hash,)))
+        return_url = 'http://%s%s' % (request.META['HTTP_HOST'], reverse('cart.views.payment', args=(order.hash, payment_attempt.hash,)))
         
         amount = "%.2f" % order.total()
         

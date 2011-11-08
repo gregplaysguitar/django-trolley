@@ -36,30 +36,43 @@ Thanks to http://code.google.com/p/django-cart/ for inspiration.
    `cart.models.CartProductInterface`. Alternately, copy the sample `shop` 
    app into your project and customise.
    
-7. Define the `CART_PRODUCT_TYPES` setting - typically 
-   
-        CART_PRODUCT_TYPES = (
-            ('shop', 'product'),
-        )
+7. Create shop templates - samples are provided in `demo/templates/shop`
+
+
+# Standalone payments
+
+django-trolley's payment system is designed to be usable by itself for non-shop payments (donations, generic website payments etc). An example app is provided (`payment`) - to install, follow installation steps 1-4 above, and also do the following:
+
+1. Symlink or move the `payment` directory onto your path.
+
+2. Add `'payment'` to INSTALLED_APPS
+
+3. Add `'payment.urls'` to your root url conf, i.e.
     
-8. Create shop templates - samples are provided in `demo/templates/shop`
+        (r'^payment/', include('payment.urls')),
+
+4. Create a payment form template at `payment/index.html` — see the `demo/templates/payment/index.html` for an example.
 
 
-# Demo shop
+# Example shop
 
-A demo shop app and templates are provided as a starting point. To use:
-
-    >> cd demo
-    >> python manage.py syncdb
-    >> python manage.py runserver
-
+An example shop app is provided - this can be used directly, or as a starting point for a custom shop app. Generally you'll want to write your own shop app since this one is very simple.
 
 
 # Settings 
 
-Various other settings are available for customisation - these are 
-located in the file `cart/settings` but can be overridden in your
-`settings.py`
+Various other settings are available for customisation - these are located and documented in the file `cart/settings.py`, but can be overridden in your project's  `settings.py` with the CART prefix. Eg
+
+    CART_ORDER_DETAIL_MODEL = 'shop.OrderDetail'
+
+
+# Demo project
+
+A demo project is provided to demonstrate the example shop and payment app working in conjunction with the cart. To run the demo:
+
+    >> cd path-to-django-trolley/demo
+    >> python manage.py syncdb
+    >> python manage.py runserver
 
 
 

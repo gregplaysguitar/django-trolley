@@ -157,9 +157,7 @@ LOGGING = {
 
 
 CART_PAYMENT_BACKEND = 'cart.payment.manual'
-CART_PRODUCT_TYPES = (
-    ('shop', 'product'),
-)
+
 
 
 EMAIL_HOST = 'localhost'

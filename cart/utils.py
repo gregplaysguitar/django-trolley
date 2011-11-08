@@ -77,3 +77,6 @@ def easy_tag(func):
     return inner
 
 
+def get_product_types():
+    from models import CartProductInterface
+    return [cls for cls in models.get_models() if issubclass(cls, CartProductInterface)]

@@ -13,13 +13,13 @@ from django.db.models import Q
 from django.forms.formsets import formset_factory
 
 import settings as cart_settings
-from utils import get_order_detail_class, OrderDetailNotAvailable
+from utils import get_order_detail_class, OrderDetailNotAvailable, get_product_types
 from api import Cart
 from models import Order
 
     
 product_type_queryset = ContentType.objects.filter(
-    reduce(Q.__or__, [Q(app_label=t[0], model=t[1]) for t in cart_settings.PRODUCT_TYPES])
+    reduce(Q.__or__, [Q(app_label=cls._meta.app_label, model=cls._meta.module_name) for cls in get_product_types()])
 )
 
 
@@ -138,14 +138,13 @@ class OrderForm(forms.ModelForm):
 
     def clean(self):
         if not self.cleaned_data.get('email', None) and not self.cleaned_data.get('phone', None):
-            self._errors['email'] = forms.util.ErrorList(['Please enter an email address.'])
+            self._errors['email'] = forms.util.ErrorList(['Please enter an email or phone.'])
         return self.cleaned_data
     
-    def __init__(self, *args, **kwargs):
-        super(OrderForm, self).__init__(*args, **kwargs)
-        for f in ('name', 'email', 'street_address', 'city', 'post_code', 'country'):
-            if f in self.fields:
-                self.fields[f].required = True
+
+for f in ('name', 'email', 'street_address', 'city', 'post_code', 'country'):
+    if f in OrderForm.base_fields:
+        OrderForm.base_fields[f].required = True
 
 
 def order_detail_form_factory():

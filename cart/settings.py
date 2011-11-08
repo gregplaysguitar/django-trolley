@@ -3,14 +3,6 @@ import os
 from django.conf import settings
 
 
-"""A list of (app, model) tuples specifying what can go in the cart."""
-PRODUCT_TYPES = getattr(
-    settings,
-    'CART_PRODUCT_TYPES',
-    (('shop', 'product'),)
-)
-
-
 """A custom model which works in the same way as django's AUTH_PROFILE_MODULE
    to add custom data to an order. Use it for adding data which is custom to 
    your project, such as a separate delivery address."""

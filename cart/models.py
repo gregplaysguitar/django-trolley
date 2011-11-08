@@ -185,9 +185,11 @@ class OrderLine(models.Model):
     options = models.TextField(blank=True, default='', editable=False)
     
     def options_text(self):
-        options = simplejson.loads(self.options)
-        return ", ".join([options[key] for key in options])
-    
+        if self.options:
+            options = simplejson.loads(self.options)
+            return ", ".join([options[key] for key in options])
+        else:
+            return ''
     
     class Meta:
         pass

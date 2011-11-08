@@ -10,14 +10,14 @@ from cart.forms import order_detail_form_factory
 
 from forms import PaymentOrderForm, PaymentForm
 
-def index(request):
+def index(request, order_form_cls=PaymentOrderForm, payment_form_cls=PaymentForm):
     
     detail_form_cls = order_detail_form_factory()
     
     if request.POST:
-        order_form = PaymentOrderForm(request.POST)
+        order_form = order_form_cls(request.POST)
         detail_form = detail_form_cls(request.POST)
-        payment_form = PaymentForm(request.POST)
+        payment_form = payment_form_cls(request.POST)
         valid = order_form.is_valid()
         if valid:
             payment = payment_form.save()
@@ -62,9 +62,9 @@ def index(request):
             return HttpResponseRedirect(redirect_url)
     
     else:
-        order_form = PaymentOrderForm()
+        order_form = order_form_cls()
         detail_form = detail_form_cls()
-        payment_form = PaymentForm()
+        payment_form = payment_form_cls()
     
     return render_to_response( 'payment/index.html', {
         'order_form': order_form,

@@ -43,7 +43,7 @@ def index(request):
         
         if request.is_ajax():
             html = render_to_string(
-                'payment/index.inc.html',
+                'payment/index_ajax.html',
                 RequestContext(request, {
                     'order_form': order_form,
                     'detail_form': detail_form,

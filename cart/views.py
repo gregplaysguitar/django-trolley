@@ -162,6 +162,9 @@ def delivery(request, order_form_cls=OrderForm):
                 order = form.save(commit=False)
                 order.session_id = request.session.session_key
                 order.shipping_cost = cart.shipping_cost()
+                order.status = 'confirmed'
+                
+                order.save()
                 
                 for line in order.orderline_set.all():
                     line.delete()
@@ -172,9 +175,7 @@ def delivery(request, order_form_cls=OrderForm):
                         price=item.row_total(),
                         options=simplejson.dumps(item['options'])
                     )
-                order.status = 'confirmed'
                 
-                order.save()
                 
                 # if the form has no 'save' method, assume it's the dummy form
                 if callable(getattr(detail_form, 'save', None)):

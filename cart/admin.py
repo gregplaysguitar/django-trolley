@@ -51,7 +51,7 @@ class OrderLineInline(admin.TabularInline):
 
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'total_str', 'name', 'status', 'payment_successful', 'created', 'shipped', 'products',)
+    list_display = ('id', 'total_str', 'name', 'status', 'payment_successful', 'created', 'paid', 'shipped', 'products', 'hash', )
     list_display_links = ('id', 'total_str', 'name',)
     list_filter = ('status', 'payment_successful', 'creation_date', 'completion_date')
     search_fields = ('name', 'email',)
@@ -63,6 +63,12 @@ class OrderAdmin(admin.ModelAdmin):
     def created(self, instance):
         if instance.creation_date:
             return datetime.datetime.strftime(instance.creation_date, '%Y-%m-%d')
+        else:
+            return 'N/A'
+    
+    def paid(self, instance):
+        if instance.payment_date:
+            return datetime.datetime.strftime(instance.payment_date, '%Y-%m-%d')
         else:
             return 'N/A'
     

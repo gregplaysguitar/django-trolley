@@ -251,16 +251,20 @@ def payment(request, order_hash=None, param=None):
             return HttpResponseRedirect(reverse('cart.views.payment', args=(order.hash,)))
         
     if order.total():
-        try:
-            backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
-        except ImportError:
-            # Try old format for backwards-compatibility
-            backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
-        
-       
-        backend = backend_module.PaymentBackend()
-        
-        return backend.paymentView(request, param, order)
+        if cart_settings.PAYMENT_BACKEND:
+            try:
+                backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
+            except ImportError:
+                # Try old format for backwards-compatibility
+                backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
+            
+           
+            backend = backend_module.PaymentBackend()
+            
+            return backend.paymentView(request, param, order)
+        else:
+            # If no payment backend, assume we're skipping this step 
+            return HttpResponseRedirect(order.get_absolute_url())
     else:
         order.payment_successful = True
         order.save()

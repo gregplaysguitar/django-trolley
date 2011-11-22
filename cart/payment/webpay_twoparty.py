@@ -18,6 +18,7 @@ from cart.payment_forms import CCForm
 from cart.api import Cart
 
 class PaymentBackend:
+    """Hosted payment system which passes credit card details to webpay for verification and payment. Requires webpay libraries to be installed."""
     
     SUCCESS_RESPONSE_CODES = ["00", "08", "77"]
     

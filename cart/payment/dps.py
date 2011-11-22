@@ -9,8 +9,10 @@ from django.shortcuts import render_to_response, get_object_or_404
 
 
 class PaymentBackend:
+    """Payment backend which redirects to a DPS-hosted credit card page for payment."""
     
     def pxrequest(self, values):
+        """Performs a generic request to pxpay."""
         req = urllib2.Request(settings.PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
         response = urllib2.urlopen(req)
         
@@ -20,6 +22,7 @@ class PaymentBackend:
     
     
     def read_result(self, result):
+        """Retrieves pxpay response data, given a result hash."""
         values = {
             'ProcessResponse': {
                 'PxPayUserId': settings.PXPAY_USERID,
@@ -31,6 +34,8 @@ class PaymentBackend:
     
     
     def payment_request(self, amount, merchant_ref, email, txn_id, return_url, txn_data=[]):
+        """Makes a payment request to the pxpay server."""
+        
         values = {
             'PxPayUserId': settings.PXPAY_USERID,
             'PxPayKey': settings.PXPAY_KEY,
@@ -56,6 +61,7 @@ class PaymentBackend:
     
     
     def paymentView(self, request, param, order):
+        """View which handles the payment requests and redirects to the appropriate DPS page."""
         
         if param:
  
@@ -80,7 +86,6 @@ class PaymentBackend:
             if success:
                 return HttpResponseRedirect(order.get_absolute_url())
     
-        
         payment_attempt = order.paymentattempt_set.create()
         
         return_url = 'http://%s%s' % (request.META['HTTP_HOST'], reverse('cart.views.payment', args=(order.hash, payment_attempt.hash,)))

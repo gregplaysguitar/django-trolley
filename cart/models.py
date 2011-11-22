@@ -100,9 +100,9 @@ class Order(models.Model):
     acknowledgement_sent = models.BooleanField(default=False, editable=False)
     
     
-    creation_date = models.DateTimeField(auto_now_add=True)
-    payment_date = models.DateTimeField(null=True, blank=True, help_text="Leave blank to auto-fill this field")
-    completion_date = models.DateTimeField(null=True, blank=True, help_text="Leave blank to auto-fill this field")
+    creation_date = models.DateTimeField(auto_now_add=True, editable=False)
+    payment_date = models.DateTimeField(null=True, blank=True, editable=False)
+    completion_date = models.DateTimeField(null=True, blank=True, editable=False)
     session_id = models.CharField(max_length=32, editable=False)
     
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -119,8 +119,7 @@ class Order(models.Model):
             self.completion_date = datetime.datetime.now()
         if (not self.payment_date) and self.payment_successful:
             self.payment_date = datetime.datetime.now()
-            
-        self.complete_purchase()
+            self.complete_purchase()
         
         super(Order, self).save()
 

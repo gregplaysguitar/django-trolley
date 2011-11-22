@@ -35,7 +35,7 @@ class AddToCartForm(forms.Form):
         min_value=1,
         widget=forms.widgets.HiddenInput()
     )
-    quantity = forms.IntegerField(min_value=1)
+    quantity = forms.IntegerField(min_value=1, initial=1)
 
 
     def clean_product_id(self):

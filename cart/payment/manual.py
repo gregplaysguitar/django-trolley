@@ -15,17 +15,13 @@ from cart.views import steps
 
 
 class PaymentBackend:
+    """Payment backend which saves credit card details to the database for manual processing."""
     
     def paymentView(self, request, param, order):
         if request.POST:
-            
-            #import time;time.sleep(10)
-            
             payment_form = CCForm(request.POST)
             if payment_form.is_valid():
                 
-                #{'ccv_number': 123, 'holder': u'123', 'number': 4111111111111111L, 'expiration': datetime.date(2012, 1, 31)}
-            
                 payment_attempt = order.paymentattempt_set.create()
                 result = "\n".join(['%s: %s' % t for t in payment_form.cleaned_data.iteritems()])
 

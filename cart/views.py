@@ -23,7 +23,8 @@ from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order
 
 
 def index(request):
-    return HttpResponseRedirect(reverse(checkout))
+    """Dummy view for backwards-compatibility - allows reversing of cart.view.index"""
+    pass
     
 
 def validate_cart(request, view):
@@ -251,16 +252,20 @@ def payment(request, order_hash=None, param=None):
             return HttpResponseRedirect(reverse('cart.views.payment', args=(order.hash,)))
         
     if order.total():
-        try:
-            backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
-        except ImportError:
-            # Try old format for backwards-compatibility
-            backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
-        
-       
-        backend = backend_module.PaymentBackend()
-        
-        return backend.paymentView(request, param, order)
+        if cart_settings.PAYMENT_BACKEND:
+            try:
+                backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
+            except ImportError:
+                # Try old format for backwards-compatibility
+                backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
+            
+           
+            backend = backend_module.PaymentBackend()
+            
+            return backend.paymentView(request, param, order)
+        else:
+            # If no payment backend, assume we're skipping this step 
+            return HttpResponseRedirect(order.get_absolute_url())
     else:
         order.payment_successful = True
         order.save()
@@ -275,7 +280,24 @@ def complete(request, order_hash):
     cart.clear()
     order = get_object_or_404(Order, hash=order_hash)
     
-    if (not order.notification_sent or not order.acknowledgement_sent) and order.payment_successful:
+    if not order.notification_sent:
+        notify_body = render_to_string(
+            'cart/email/order_notify.txt',
+            RequestContext(request, {
+                'order': order,
+                'site': get_current_site(),
+            })
+        )
+        send_mail(
+            "Order Received",
+            notify_body, 
+            settings.DEFAULT_FROM_EMAIL,
+            [t[1] for t in cart_settings.MANAGERS]
+        )
+        order.notification_sent = True
+        order.save()
+    
+    if order.email and not order.acknowledgement_sent:
         acknowledge_body = render_to_string(
             'cart/email/order_acknowledge.txt',
             RequestContext(request, {
@@ -290,35 +312,12 @@ def complete(request, order_hash):
                 'site': get_current_site(),
             })
         )
-
-        notify_body = render_to_string(
-            'cart/email/order_notify.txt',
-            RequestContext(request, {
-                'order': order,
-                'site': get_current_site(),
-            })
+        send_mail(
+            acknowledge_subject,
+            acknowledge_body, 
+            settings.DEFAULT_FROM_EMAIL,
+            [order.email]
         )
-
-        def TMP_send_messages():
-            if order.email and not order.acknowledgement_sent:
-                send_mail(
-                    acknowledge_subject,
-                    acknowledge_body, 
-                    settings.DEFAULT_FROM_EMAIL,
-                    [order.email]
-                )
-            if not order.notification_sent:
-                send_mail(
-                    "Order Received",
-                    notify_body, 
-                    settings.DEFAULT_FROM_EMAIL,
-                    [t[1] for t in cart_settings.MANAGERS]
-                )
-            order.save()
-         
-        #run_async(TMP_send_messages)
-        TMP_send_messages()
-        order.notification_sent = True
         order.acknowledgement_sent = True
         order.save()
         

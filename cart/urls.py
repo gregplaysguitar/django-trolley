@@ -4,8 +4,8 @@ from django.conf.urls.defaults import *
 
 
 urlpatterns = patterns('cart.views',
-    (r'^$', 'index'),
-    (r'^checkout/$', 'checkout'),
+    (r'^$', 'checkout'),
+    (r'^$', 'index'), # dummy url for backwards-compatibility - allows reversing of cart.views.index
     (r'^delivery/$', 'delivery'),
     (r'^payment/$', 'payment'),
     (r'^payment/([\w_\-]+)/$', 'payment'),

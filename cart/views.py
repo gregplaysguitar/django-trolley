@@ -23,7 +23,8 @@ from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order
 
 
 def index(request):
-    return HttpResponseRedirect(reverse(checkout))
+    """Dummy view for backwards-compatibility - allows reversing of cart.view.index"""
+    pass
     
 
 def validate_cart(request, view):

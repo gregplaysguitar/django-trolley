@@ -279,7 +279,24 @@ def complete(request, order_hash):
     cart.clear()
     order = get_object_or_404(Order, hash=order_hash)
     
-    if (not order.notification_sent or not order.acknowledgement_sent):
+    if not order.notification_sent:
+        notify_body = render_to_string(
+            'cart/email/order_notify.txt',
+            RequestContext(request, {
+                'order': order,
+                'site': get_current_site(),
+            })
+        )
+        send_mail(
+            "Order Received",
+            notify_body, 
+            settings.DEFAULT_FROM_EMAIL,
+            [t[1] for t in cart_settings.MANAGERS]
+        )
+        order.notification_sent = True
+        order.save()
+    
+    if order.email and not order.acknowledgement_sent:
         acknowledge_body = render_to_string(
             'cart/email/order_acknowledge.txt',
             RequestContext(request, {
@@ -294,35 +311,12 @@ def complete(request, order_hash):
                 'site': get_current_site(),
             })
         )
-
-        notify_body = render_to_string(
-            'cart/email/order_notify.txt',
-            RequestContext(request, {
-                'order': order,
-                'site': get_current_site(),
-            })
+        send_mail(
+            acknowledge_subject,
+            acknowledge_body, 
+            settings.DEFAULT_FROM_EMAIL,
+            [order.email]
         )
-
-        def TMP_send_messages():
-            if order.email and not order.acknowledgement_sent:
-                send_mail(
-                    acknowledge_subject,
-                    acknowledge_body, 
-                    settings.DEFAULT_FROM_EMAIL,
-                    [order.email]
-                )
-            if not order.notification_sent:
-                send_mail(
-                    "Order Received",
-                    notify_body, 
-                    settings.DEFAULT_FROM_EMAIL,
-                    [t[1] for t in cart_settings.MANAGERS]
-                )
-            order.save()
-         
-        #run_async(TMP_send_messages)
-        TMP_send_messages()
-        order.notification_sent = True
         order.acknowledgement_sent = True
         order.save()
         

@@ -279,7 +279,7 @@ def complete(request, order_hash):
     cart.clear()
     order = get_object_or_404(Order, hash=order_hash)
     
-    if (not order.notification_sent or not order.acknowledgement_sent) and order.payment_successful:
+    if (not order.notification_sent or not order.acknowledgement_sent):
         acknowledge_body = render_to_string(
             'cart/email/order_acknowledge.txt',
             RequestContext(request, {

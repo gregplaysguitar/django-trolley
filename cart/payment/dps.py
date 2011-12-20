@@ -8,12 +8,17 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 
 
+PXPAY_URL = getattr(settings, 'PXPAY_URL', 'https://sec.paymentexpress.com/pxpay/pxaccess.aspx')
+PXPAY_USERID = getattr(settings, 'PXPAY_USERID')
+PXPAY_KEY = getattr(settings, 'PXPAY_KEY')
+
+
 class PaymentBackend:
     """Payment backend which redirects to a DPS-hosted credit card page for payment."""
     
     def pxrequest(self, values):
         """Performs a generic request to pxpay."""
-        req = urllib2.Request(settings.PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
+        req = urllib2.Request(PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
         response = urllib2.urlopen(req)
         
         string =  response.read()
@@ -25,8 +30,8 @@ class PaymentBackend:
         """Retrieves pxpay response data, given a result hash."""
         values = {
             'ProcessResponse': {
-                'PxPayUserId': settings.PXPAY_USERID,
-                'PxPayKey': settings.PXPAY_KEY,
+                'PxPayUserId': PXPAY_USERID,
+                'PxPayKey': PXPAY_KEY,
                 'Response': result,
             }
         }
@@ -37,8 +42,8 @@ class PaymentBackend:
         """Makes a payment request to the pxpay server."""
         
         values = {
-            'PxPayUserId': settings.PXPAY_USERID,
-            'PxPayKey': settings.PXPAY_KEY,
+            'PxPayUserId': PXPAY_USERID,
+            'PxPayKey': PXPAY_KEY,
             'TxnType': 'Purchase',
             'CurrencyInput' : 'NZD',
 

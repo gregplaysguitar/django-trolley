@@ -18,7 +18,7 @@ def index(request, order_form_cls=PaymentOrderForm, payment_form_cls=PaymentForm
         order_form = order_form_cls(request.POST)
         detail_form = detail_form_cls(request.POST)
         payment_form = payment_form_cls(request.POST)
-        valid = order_form.is_valid()
+        valid = order_form.is_valid() and payment_form.is_valid() and detail_form.is_valid()
         if valid:
             payment = payment_form.save()
             order = order_form.save()

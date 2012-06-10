@@ -114,14 +114,14 @@ class Order(models.Model):
     def __unicode__(self):
         return "Order #%s - %s, %s" % (self.pk, self.name, self.total())
     
-    def save(self):
+    def save(self, *args, **kwargs):
         if (not self.completion_date) and self.status == 'shipped':
             self.completion_date = datetime.datetime.now()
         if (not self.payment_date) and self.payment_successful:
             self.payment_date = datetime.datetime.now()
             self.complete_purchase()
         
-        super(Order, self).save()
+        super(Order, self).save(*args, **kwargs)
 
     def complete_purchase(self):
         groups = {}

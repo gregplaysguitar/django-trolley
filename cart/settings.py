@@ -59,7 +59,9 @@ ALLOWED_CARD_TYPES = ('Visa', 'MasterCard')
        
        'cart.payment.manual'
 
-   Built in modules are in cart.payment, or you can write your own."""
+   Built in modules are in cart.payment, or you can write your own. If set to
+   None, the payment step will be skipped and the user will go straight to
+   the order complete page, which can contain payment instructions."""
 PAYMENT_BACKEND = getattr(
     settings,
     'CART_PAYMENT_BACKEND',

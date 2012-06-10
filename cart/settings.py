@@ -51,7 +51,7 @@ MANAGERS = getattr(
 
 
 """Allowed card types - choose from 'Visa', 'MasterCard', 
-   'American Express', 'Discover'."""
+   'American Express', 'Discover', 'Diners Club'."""
 ALLOWED_CARD_TYPES = ('Visa', 'MasterCard') 
 
 

@@ -52,8 +52,11 @@ MANAGERS = getattr(
 
 """Allowed card types - choose from 'Visa', 'MasterCard', 
    'American Express', 'Discover', 'Diners Club'."""
-ALLOWED_CARD_TYPES = ('Visa', 'MasterCard') 
-
+ALLOWED_CARD_TYPES = getattr(
+    settings,
+    'CART_ALLOWED_CARD_TYPES',
+    ('Visa', 'MasterCard') 
+)
 
 """Payment backends - should be a fully qualified path, e.g. 
        

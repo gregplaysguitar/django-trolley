@@ -20,7 +20,7 @@ from models import Order
     
 product_type_queryset = ContentType.objects.filter(
     reduce(Q.__or__, [Q(app_label=cls._meta.app_label, model=cls._meta.module_name) for cls in get_product_types()])
-)
+) if get_product_types() else ContentType.objects.none()
 
 
 

@@ -17,7 +17,7 @@ Thanks to http://code.google.com/p/django-cart/ for inspiration.
 
 # Installation
 
-1. Symlink or move the `cart` directory onto your path.
+1. Run `./setup.py install` to install the cart. Alternately, you can symlink or move the `cart` directory onto your path.
 
 2. Add `'cart'` to INSTALLED_APPS
 

@@ -21,7 +21,7 @@ class Category(models.Model):
     
     @models.permalink
     def get_absolute_url(self):
-        return ('shop.views.category', (self.category.slug, self.slug,))
+        return ('shop.views.index', (self.slug,))
 
 
 

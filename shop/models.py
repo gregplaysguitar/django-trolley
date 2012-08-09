@@ -42,38 +42,6 @@ class Product(models.Model, CartProductInterface):
     class Meta:
         ordering = ('name', )
     
-    @staticmethod
-    def get_shipping_cost(items, cart):
-        """New Zealand free
-           Australia: $20.00
-           Rest of the world: $50.00
-        """
-
-        if cart.shipping_options.get('location', None) == 'New Zealand':
-            amount = 0
-        elif cart.shipping_options.get('location', None) == 'Australia':
-            amount = 20
-        else:
-            amount = 50
-        
-        return decimal.Decimal(amount)
-
-    @staticmethod
-    def get_available_shipping_options(items):
-        """Returns a tuple of user-selectable shipping options"""
-        return (
-            ('location', 'Your location', (
-                ('', 'Please Select'),
-                ('New Zealand', 'New Zealand'),
-                ('Australia', 'Australia'),
-                ('International', 'International'),
-            )),
-        )
-    
-    @staticmethod
-    def verify_purchase(items):
-        pass
-
     def get_price(self, quantity, options={}):
         return self.price * quantity
 

@@ -13,12 +13,6 @@ def get_current_site():
         return None
 
 
-class OrderDetailNotAvailable(Exception):
-    """Raised if an ORDER_DETAIL_MODEL has not been specified."""
-    pass
-
-
-
 def form_errors_as_notification(form):
     """Display form errors in plain text format, for display via ajax."""
     if form.errors:
@@ -31,22 +25,6 @@ def form_errors_as_notification(form):
         return ', '.join(errors)
     else:
         return ''
-        
-
-
-def get_order_detail_class():
-    """Get the specified ORDER_DETAIL_MODEL, or raise an exception."""
-    if not getattr(cart_settings, 'ORDER_DETAIL_MODEL', False):
-        raise OrderDetailNotAvailable
-    else:
-        try:
-            app_label, model_name = cart_settings.ORDER_DETAIL_MODEL.split('.')
-            return models.get_model(app_label, model_name)
-        except (ImportError):
-            raise OrderDetailNotAvailable
-
-
-
 
 
 def easy_tag(func):

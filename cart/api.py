@@ -115,7 +115,10 @@ class Item(DictMixin):
         return ", ".join([self['options'][key] for key in self['options']])
   
     
-class Cart:
+class BaseCart:
+    '''Abstract Cart class - don't use this directly. Should be extended by custom Cart
+       classes.'''
+       
     def __init__(self, request):
         if not request.session.get(CART_INDEX, None):
             request.session[CART_INDEX] = {}
@@ -209,21 +212,8 @@ class Cart:
             del(self.data[index])
         self.modified()
         
-    
     def quantity(self):
         return sum([item.get('quantity', 0) for item in self])
-    
-    def shipping_cost(self):
-        cost = decimal.Decimal(0)
-        for ctype in self.ctype_list():
-            cost += (ctype.model_class().get_shipping_cost([item for item in self if item.ctype() == ctype], self) or 0)
-        return cost
-    
-    def get_available_shipping_options(self):
-        options = ()
-        for ctype in self.ctype_list():
-            options += ctype.model_class().get_available_shipping_options([item for item in self if item.ctype() == ctype]) or ()
-        return options
         
     def subtotal(self):
         return sum([(item.row_total() or 0) for item in self])
@@ -238,7 +228,7 @@ class Cart:
         
         for ctype in self.ctype_list():
             try:
-                ctype.model_class().verify_purchase([item for item in self if item.ctype() == ctype])
+                self.verify_purchase()
             except CartIntegrityError, e:
                 errors.append(e)
         #print errors
@@ -247,6 +237,24 @@ class Cart:
     def is_valid(self):
         return len(self.errors()) == 0
     
-  
+
+
+class Cart(BaseCart):
+    '''Default Cart class, providing simple defaults for all customisable methods.'''
     
-  
+    def shipping_cost(self):
+        '''Should return total shipping cost for the cart.'''
+        return 0
+    
+    def verify_purchase(self):
+        '''Should raise a CartIntegrityError if the purchase is not allowed.'''
+        return
+    
+    def get_available_shipping_options(self):
+        '''Should return a list of shipping options for the cart, each of the form
+               
+               (key, name, choices)
+               
+           where "choices" is a list of key,value pairs in the usual django format.'''
+        return []
+    

@@ -63,7 +63,7 @@ An example shop app is provided - this can be used directly, or as a starting po
 
 Various other settings are available for customisation - these are located and documented in the file `cart/settings.py`, but can be overridden in your project's  `settings.py` with the CART prefix. Eg
 
-    CART_ORDER_DETAIL_MODEL = 'shop.OrderDetail'
+    CART_HELPER_MODULE = 'cart_helpers'
 
 
 # Demo project
@@ -75,5 +75,63 @@ A demo project is provided to demonstrate the example shop and payment app worki
     >> python manage.py runserver
 
 
+# Helper Module
+
+Similar to django's COMMENT_APP setting, this module can be used to define custom sitewide
+functionality for the cart. To use, create a module and add it to your settings, eg.
+
+    CART_HELPER_MODULE = 'cart_helpers'
+
+The helper module can provide any of the following:
+
+1) A `get_cart` function, which should return a custom cart API class extending 
+   cart.api.Cart. This class may override certain methods to provide custom 
+   functionality. For example:
 
 
+    from cart.api import BaseCart
+
+    class Cart(BaseCart):
+        
+        def shipping_cost(self):
+            '''Should return total shipping cost for the cart.'''
+            return 0
+        
+        def verify_purchase(self):
+            '''Should raise a CartIntegrityError if the purchase is not allowed.'''
+            return
+        
+        def get_available_shipping_options(self):
+            '''Should return a list of shipping options for the cart, each of the form
+                   
+                   (key, name, choices)
+                   
+               where "choices" is a list of key,value pairs in the usual django format.'''
+            return []
+    
+    def get_cart():
+        return Cart
+
+2) A `get_order_detail` function, which should return a model to be used to add custom
+   data to a cart Order, similar to django's AUTH_PROFILE_MODULE setting. Use it for 
+   adding data specific to your project, such as a separate delivery address. The model
+   must have a ForeignKey to cart.Order. For example:
+   
+    from cart_helpers.models import OrderDetail
+    
+    def get_order_detail():
+        return OrderDetail
+   
+And in cart_helpers/models:
+    
+    from django.db import models
+    
+    class OrderDetail(models.Model):
+        order = models.ForeignKey('cart.Order', editable=False)
+        delivery_address = models.TextField(blank=True, default='')
+        
+        def __unicode__(self):
+            return 'Additional detail for %s' % (unicode(self.order))
+
+Note that in this case you'll need to add `'cart_helpers'` to your `INSTALLED_APPS` 
+setting in order for django to generate the db tables.

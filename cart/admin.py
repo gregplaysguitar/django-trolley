@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from django.contrib import admin
-from models import Order, OrderLine, PaymentAttempt
 import datetime
-import settings as cart_settings
+
+from django.contrib import admin
 from django.db import models
 from django import forms
 from django.utils.safestring import mark_safe
+
+from cart import get_helper_module
+import settings as cart_settings
+from models import Order, OrderLine, PaymentAttempt
 
 
 
@@ -91,12 +94,10 @@ class OrderAdmin(admin.ModelAdmin):
             item.status = 'shipped'
             item.save()
 
-  
-if getattr(cart_settings, 'ORDER_DETAIL_MODEL', False):
-    app_label, model_name = cart_settings.ORDER_DETAIL_MODEL.split('.')
-    extra_detail_model = models.get_model(app_label, model_name)
+order_detail = get_helper_module().get_order_detail()
+if order_detail:
     class ExtraDetailInline(admin.StackedInline):
-        model = extra_detail_model
+        model = order_detail
         max_num = 1
         extra = 1
     

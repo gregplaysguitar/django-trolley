@@ -3,20 +3,20 @@ import os
 from django.conf import settings
 
 
-"""A custom model which works in the same way as django's AUTH_PROFILE_MODULE
-   to add custom data to an order. Use it for adding data which is custom to 
-   your project, such as a separate delivery address."""
-ORDER_DETAIL_MODEL = getattr(
+"""A module to provide custom functionality not specific to a product model, eg shipping
+calculations."""
+HELPER_MODULE = getattr(
     settings,
-    'CART_ORDER_DETAIL_MODEL',
+    'CART_HELPER_MODULE',
     None
 )
 
 
 """List of fields to show in the checkout form, eg discount code - 
-   must correpond to fields in the ORDER_DETAIL_MODEL class. Fields
-   in the ORDER_DETAIL_MODEL but not listed here will show on the 
+   must correpond to fields in the order detail model class. Fields
+   in the detail class but not listed here will show on the 
    delivery details page."""
+# TODO make this a function in the HELPER_MODULE
 CHECKOUT_FORM_FIELDS = getattr(
     settings,
     'CART_CHECKOUT_FORM_FIELDS',

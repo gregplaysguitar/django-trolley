@@ -13,10 +13,11 @@ from django.db.models import Q
 from django.forms.formsets import formset_factory
 
 import settings as cart_settings
-from utils import get_order_detail_class, OrderDetailNotAvailable, get_product_types
+from utils import get_product_types
 from api import Cart
 from models import Order
-
+from cart import get_helper_module
+    
     
 product_type_queryset = ContentType.objects.filter(
     reduce(Q.__or__, [Q(app_label=cls._meta.app_label, model=cls._meta.module_name) for cls in get_product_types()])
@@ -86,11 +87,9 @@ def checkout_form_factory():
     """Returns a form corresponding to a subset of the ORDER_DETAIL_MODEL, if 
        one is specified and CHECKOUT_FORM_FIELDS is set. Otherwise returns a 
        dummy form."""
-    try:
-        order_detail_cls = get_order_detail_class()
-    except OrderDetailNotAvailable:
-        order_detail_cls = None
-
+    
+    order_detail_cls = get_helper_module().get_order_detail()
+    
     if order_detail_cls and cart_settings.CHECKOUT_FORM_FIELDS:
         class CheckoutForm(forms.ModelForm):
             class Meta:
@@ -150,14 +149,15 @@ for f in ('name', 'email', 'street_address', 'city', 'post_code', 'country'):
 def order_detail_form_factory():
     """Returns a form for the extra custom details defined in ORDER_DETAIL_MODEL.
        Excludes those displayed in the checkout via CHECKOUT_FORM_FIELDS."""
-    try:
-        model_cls = get_order_detail_class()
+    
+    model_cls = get_helper_module().get_order_detail()
+    if model_cls:
         class OrderDetailForm(forms.ModelForm):
             class Meta:
                 model = model_cls
                 exclude = ['order'] + (cart_settings.CHECKOUT_FORM_FIELDS)
         return OrderDetailForm
-    except OrderDetailNotAvailable:
+    else:
         # dummy form class with no fields, to simplify the view
         class DummyForm(forms.Form):
             def __init__(self, *args, **kwargs):

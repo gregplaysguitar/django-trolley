@@ -6,10 +6,7 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 
-from utils import get_order_detail_class, OrderDetailNotAvailable
 import settings as cart_settings
-
-
 
 
 class CartProductInterface(object):
@@ -24,30 +21,7 @@ class CartProductInterface(object):
         """Returns product price, given the quantity added and options"""
         raise NotImplementedError()
 
-    @staticmethod
-    def get_shipping_cost(items, cart):
-        """Returns shipping cost for the whole cart, given a list of items and 
-           cart instance. If multiple "product" models are in use, the shipping
-           cost will be calculated for each and the sum used."""
-        raise NotImplementedError()
-    
-    @staticmethod
-    def get_available_shipping_options(items):
-        """Returns a list of shipping options for the given items, each of the
-           form
-               
-               (key, name, choices)
-               
-           where "choices" is a list of key,value pairs in the usual django
-           format.""" 
-        raise NotImplementedError()
-    
-    @staticmethod
-    def verify_purchase(items):
-        """Raises a CartIntegrityError if the purchase is not allowed."""
-        raise NotImplementedError()
-    
-    
+
     # optional methods
     
     @staticmethod
@@ -55,7 +29,6 @@ class CartProductInterface(object):
         """Called on purchase completion for each item in the order."""
         pass
 
-    
 
 class DefaultCartProductInterface(CartProductInterface):
     """CartProductInterface interface implementation, giving sensible defaults for
@@ -63,21 +36,6 @@ class DefaultCartProductInterface(CartProductInterface):
     
     def get_thumbnail(self, options={}):
         return None
-
-    @staticmethod
-    def get_shipping_cost(items, cart):
-        return 0
-
-    @staticmethod
-    def get_available_shipping_options(items):
-        return None
-        
-    @staticmethod
-    def verify_purchase(items):
-        return True
-
-
-
 
 
 class Order(models.Model):
@@ -107,7 +65,6 @@ class Order(models.Model):
     
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
-    
     class Meta:
         ordering = ('-creation_date',)
     
@@ -134,8 +91,6 @@ class Order(models.Model):
             
         for ctype_pk in groups:
             ContentType.objects.get(pk=ctype_pk).model_class().complete_purchase(groups[ctype_pk], self)
-           
-        
     
     def total(self):
         return sum(line.price for line in self.orderline_set.all()) + self.shipping_cost
@@ -157,14 +112,14 @@ class Order(models.Model):
 
     
     def get_detail(self):
-        """
-        Returns extra detail as stored in the ORDER_DETAIL_MODEL setting
-        """
+        """Returns extra detail as defined by get_order_detail()"""
         if not hasattr(self, '_detail_cache'):
-            try:
-                self._detail_cache = get_order_detail_class()._default_manager.using(self._state.db).get(order__id__exact=self.id)
+            model_cls = get_helper_module().get_order_detail()
+            
+            if model_cls:
+                self._detail_cache = model_cls._default_manager.using(self._state.db).get(order__id__exact=self.id)
                 self._detail_cache.order = self
-            except OrderDetailNotAvailable:
+            else:
                 self._detail_cache = None
         return self._detail_cache
     
@@ -201,6 +156,7 @@ class OrderLine(models.Model):
             return self.payment_attempt_set.order_by('-creation_date')[0]
         else:
             return None
+
 
 class PaymentAttempt(models.Model):
     """Stores information about each attempted payment for an order."""

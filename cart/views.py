@@ -15,7 +15,7 @@ from django.utils import importlib
 from django.views.decorators.cache import never_cache
 
 from api import Cart, ItemAlreadyExists
-from utils import form_errors_as_notification, get_order_detail_class, get_current_site
+from utils import form_errors_as_notification, get_current_site
 import settings as cart_settings
 from models import Order
 from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
@@ -140,9 +140,13 @@ def delivery(request, order_form_cls=OrderForm):
     else:
         try:
             instance = Order.objects.get(pk=cart.data.get('order_pk', None))
-            try:
-                detail_instance = instance.get_detail()
-            except get_order_detail_class().DoesNotExist:
+            detail_cls = get_helper_module().get_order_detail()
+            if detail_cls:
+                try:
+                    detail_instance = instance.get_detail()
+                except detail_cls.DoesNotExist:
+                    detail_instance = None
+            else:
                 detail_instance = None
         except Order.DoesNotExist:
             instance = None

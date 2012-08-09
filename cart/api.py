@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import pickle
-from django.contrib.contenttypes.models import ContentType
-from UserDict import DictMixin
+import types
 import hashlib
 import decimal
+
+from django.contrib.contenttypes.models import ContentType
+from UserDict import DictMixin
+
 
 
 CART_INDEX = 'cart'
@@ -254,15 +257,24 @@ class BaseCart:
         raise NotImplementedError()
 
 
+def has_static_method(class, attr):
+    return isinstance(getattr(obj, attr, None), types.FunctionType)
+
 class Cart(BaseCart):
     '''Default Cart class, providing simple defaults for all customisable methods.'''
     
     def shipping_cost(self):
+        if any([has_static_method(c, 'shipping_cost') for c in self.ctype_list()]):
+            raise DeprecationWarning(u'The shipping_cost static method is deprecated; use a HELPER_MODULE instead.')
         return 0
     
     def verify_purchase(self):
+        if any([has_static_method(c, 'verify_purchase') for c in self.ctype_list()]):
+            raise DeprecationWarning(u'The verify_purchase static method is deprecated; use a HELPER_MODULE instead.')
         return
     
     def get_available_shipping_options(self):
+        if any([has_static_method(c, 'get_available_shipping_options') for c in self.ctype_list()]):
+            raise DeprecationWarning(u'The get_available_shipping_options static method is deprecated; use a HELPER_MODULE instead.')
         return []
     

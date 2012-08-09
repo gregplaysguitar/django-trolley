@@ -88,7 +88,7 @@ The helper module can provide any of the following:
    cart.api.Cart. This class may override certain methods to provide custom 
    functionality. For example:
 
-In `cart__helpers/__init__.py`:
+In `cart_helpers/__init__.py`:
 
     from cart.api import BaseCart
 
@@ -118,7 +118,7 @@ In `cart__helpers/__init__.py`:
    adding data specific to your project, such as a separate delivery address. The model
    must have a ForeignKey to cart.Order. For example:
 
-In `cart__helpers/__init__.py`:
+In `cart_helpers/__init__.py`:
 
     from cart_helpers.models import OrderDetail
     

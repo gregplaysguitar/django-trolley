@@ -237,18 +237,13 @@ class BaseCart:
     def is_valid(self):
         return len(self.errors()) == 0
     
-
-
-class Cart(BaseCart):
-    '''Default Cart class, providing simple defaults for all customisable methods.'''
-    
     def shipping_cost(self):
         '''Should return total shipping cost for the cart.'''
-        return 0
+        raise NotImplementedError()
     
     def verify_purchase(self):
         '''Should raise a CartIntegrityError if the purchase is not allowed.'''
-        return
+        raise NotImplementedError()
     
     def get_available_shipping_options(self):
         '''Should return a list of shipping options for the cart, each of the form
@@ -256,5 +251,18 @@ class Cart(BaseCart):
                (key, name, choices)
                
            where "choices" is a list of key,value pairs in the usual django format.'''
+        raise NotImplementedError()
+
+
+class Cart(BaseCart):
+    '''Default Cart class, providing simple defaults for all customisable methods.'''
+    
+    def shipping_cost(self):
+        return 0
+    
+    def verify_purchase(self):
+        return
+    
+    def get_available_shipping_options(self):
         return []
     

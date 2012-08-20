@@ -257,7 +257,7 @@ class BaseCart:
         raise NotImplementedError()
 
 
-def has_static_method(class, attr):
+def has_static_method(obj, attr):
     return isinstance(getattr(obj, attr, None), types.FunctionType)
 
 class Cart(BaseCart):

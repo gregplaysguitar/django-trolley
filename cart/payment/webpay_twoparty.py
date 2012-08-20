@@ -18,7 +18,15 @@ from cart.payment_forms import CCForm
 from cart.api import Cart
 
 class PaymentBackend:
-    """Hosted payment system which passes credit card details to webpay for verification and payment. Requires webpay libraries to be installed."""
+    """Hosted payment system which passes credit card details to webpay for verification
+    and payment. Requires webpay libraries to be installed, and the following settings:
+    
+        WEBPAY_CLIENT_ID
+        WEBPAY_CERTIFICATE_PATH
+        WEBPAY_CERTIFICATE_PASSWORD
+        WEBPAY_PORT
+        
+    """
     
     SUCCESS_RESPONSE_CODES = ["00", "08", "77"]
     
@@ -35,18 +43,18 @@ class PaymentBackend:
         webpay.put_ClientID(webpayRef, client_id)
         
         
-        if cart_settings.WEBPAY_CERTIFICATE_PATH:
-            webpay.put_CertificatePath(webpayRef, cart_settings.WEBPAY_CERTIFICATE_PATH)
+        if getattr(settings, 'WEBPAY_CERTIFICATE_PATH', None):
+            webpay.put_CertificatePath(webpayRef, settings.WEBPAY_CERTIFICATE_PATH)
         else:
             raise PaymentException('Webpay certificate path is not set')
         
-        if cart_settings.WEBPAY_CERTIFICATE_PASSWORD:
-            webpay.put_CertificatePassword(webpayRef, cart_settings.WEBPAY_CERTIFICATE_PASSWORD)
+        if getattr(settings, 'WEBPAY_CERTIFICATE_PASSWORD', None):
+            webpay.put_CertificatePassword(webpayRef, settings.WEBPAY_CERTIFICATE_PASSWORD)
         else:
             raise PaymentException('Webpay certificate password is not set')
         
-        if cart_settings.WEBPAY_PORT:
-            webpay.setPort(webpayRef, str(cart_settings.WEBPAY_PORT))
+        if getattr(settings, 'WEBPAY_PORT', None):
+            webpay.setPort(webpayRef, str(settings.WEBPAY_PORT))
         else:
             raise PaymentException('Webpay port is not set')
         
@@ -97,13 +105,11 @@ class PaymentBackend:
                 if payment_form.is_valid():
                     payment_attempt = order.paymentattempt_set.create()
                     
-                    if callable(cart_settings.WEBPAY_CLIENT_ID):
-                        client_id = cart_settings.WEBPAY_CLIENT_ID(order)
-                    elif cart_settings.WEBPAY_CLIENT_ID:
-                        client_id = cart_settings.WEBPAY_CLIENT_ID
-                    else:
+                    client_id = getattr(settings, 'WEBPAY_CLIENT_ID', None)
+                    if callable(client_id):
+                        client_id = client_id(order)
+                    elif not client_id:
                         raise PaymentException('Payment client id not set')
-                    
                     
                     #success, transaction_ref, message, user_message = True, 123, "test", "test user message"
                     success, transaction_ref, message, user_message = self.makePayment(client_id, order.total(), order.pk, payment_form.cleaned_data)

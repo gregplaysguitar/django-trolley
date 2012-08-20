@@ -87,28 +87,3 @@ LOG_DIR = getattr(
     'CART_LOG_DIR',
     None
 )
-
-
-"""Webpay-specific settings."""
-WEBPAY_CLIENT_ID = getattr(
-    settings,
-    'CART_WEBPAY_CLIENT_ID',
-    None
-)
-WEBPAY_CERTIFICATE_PATH = getattr(
-    settings,
-    'CART_WEBPAY_CERTIFICATE_PATH',
-    None
-)
-WEBPAY_CERTIFICATE_PASSWORD = getattr(
-    settings,
-    'CART_WEBPAY_CERTIFICATE_PASSWORD',
-    None
-)
-WEBPAY_PORT = getattr(
-    settings,
-    'CART_WEBPAY_PORT',
-    None
-)
-
-

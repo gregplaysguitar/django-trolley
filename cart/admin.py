@@ -7,7 +7,7 @@ from django.db import models
 from django import forms
 from django.utils.safestring import mark_safe
 
-from cart import get_helper_module
+import helpers
 import settings as cart_settings
 from models import Order, OrderLine, PaymentAttempt
 
@@ -94,7 +94,7 @@ class OrderAdmin(admin.ModelAdmin):
             item.status = 'shipped'
             item.save()
 
-order_detail = get_helper_module().get_order_detail()
+order_detail = helpers.get_order_detail()
 if order_detail:
     class ExtraDetailInline(admin.StackedInline):
         model = order_detail

@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from django import template
 import locale
-from cart.utils import easy_tag
 
+from django import template
+from django.contrib.contenttypes.models import ContentType
+from django.core.urlresolvers import reverse
+
+from cart.utils import easy_tag
+from cart import helpers
 from cart.forms import AddToCartForm
 from cart.api import Cart
-from django.contrib.contenttypes.models import ContentType
 
 register = template.Library()
 
@@ -44,7 +47,6 @@ class AddToCartFormNode(template.Node):
         self.initial = args[4] if len(args) > 4 else kwargs.get('initial', None)
         self.single = args[5] if len(args) > 5 else kwargs.get('single', None)
         
-    
     def render(self, context):
         if self.initial:
             initial = template.Variable(self.initial).resolve(context)
@@ -56,12 +58,10 @@ class AddToCartFormNode(template.Node):
         else:
             single = False
 
-        
         instance = self.instance.resolve(context)
-        initial['product_type'] = ContentType.objects.get_for_model(instance).id
-        initial['product_id'] = instance.id
         
-        context[self.varname] = AddToCartForm(initial=initial, single=single)
+        form_cls = helpers.get_add_form(instance)
+        context[self.varname] = form_cls(initial=initial, single=single)
         return ''
 
 @register.tag
@@ -73,5 +73,16 @@ def get_add_to_cart_form(_tag, *args, **kwargs):
        
        """
     return AddToCartFormNode(*args, **kwargs)
+
+
+
+@register.simple_tag
+def add_to_cart_url(product):
+    """Gets add-to-cart url for specified product - e.g.
+           
+           <form action="{% add_to_cart_url instance %}">
+       """
+    ctype = ContentType.objects.get_for_model(product)
+    return reverse('cart.views.add', args=(ctype.id, product.id))
 
 

@@ -13,13 +13,14 @@ from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.utils import importlib
 from django.views.decorators.cache import never_cache
+from django.contrib.contenttypes.models import ContentType
 
 from api import Cart, ItemAlreadyExists
 from utils import form_errors_as_notification, get_current_site
 import settings as cart_settings
 from models import Order
 from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
-
+import helpers
 
 
 def index(request):
@@ -140,7 +141,7 @@ def delivery(request, order_form_cls=OrderForm):
     else:
         try:
             instance = Order.objects.get(pk=cart.data.get('order_pk', None))
-            detail_cls = get_helper_module().get_order_detail()
+            detail_cls = helpers.get_order_detail()
             if detail_cls:
                 try:
                     detail_instance = instance.get_detail()
@@ -388,17 +389,20 @@ def update(request):
             return HttpResponseRedirect(request.POST.get('redirect_to', reverse(checkout)))
 
 
-    
-
-
-def add(request, form_class=AddToCartForm):
+def add(request, content_type_id, product_id, form_class=None):
     """Add a product to the cart
     POST data should include content_type_id, 
     """
     if request.method != 'POST':
-        return HttpResponseNotAllowed('GET not allowed; POST is required.')
+        return HttpResponseNotAllowed(['POST'])
     else:
-        form = form_class(request.POST)
+        ctype = get_object_or_404(ContentType, pk=content_type_id)
+        product = get_object_or_404(ctype.model_class(), pk=product_id)
+        
+        if not form_class:
+            form_class = helpers.get_add_form(product)
+            
+        form = form_class(request.POST, product=product)
         cart = Cart(request)
 
         if form.is_valid():
@@ -406,8 +410,6 @@ def add(request, form_class=AddToCartForm):
             notification = (messages.SUCCESS, 'Product was added to your cart. <a href="%s">View cart</a>' % (reverse(checkout)))
         else:
             notification = (messages.ERROR, 'Could not add product to cart. %s' % form_errors_as_notification(form))
-                    
-        
         
         if request.is_ajax():
             data = {
@@ -419,10 +421,10 @@ def add(request, form_class=AddToCartForm):
             if form.is_valid():
                 data.update({
                     'success': True,
-                    'product_pk': form.get_product().pk,
-                    'product_name': form.get_product().name,
+                    'product_pk': product.pk,
+                    'product_name': product.name,
                     'product_quantity_added': form.get_quantity(),
-                    'product_quantity': cart.get(form.get_product(), form.get_options())['quantity'],
+                    'product_quantity': cart.get(product, form.get_options())['quantity'],
                 })
                 
             return HttpResponse(simplejson.dumps(data), mimetype='application/json')

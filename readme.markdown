@@ -85,7 +85,7 @@ functionality for the cart. To use, create a module and add it to your settings,
 The helper module can provide any of the following:
 
 1) A `get_cart` function, which should return a custom cart API class extending 
-   cart.api.Cart. This class may override certain methods to provide custom 
+   cart.api.Cart. This class should override certain methods to provide custom 
    functionality. For example:
 
 
@@ -122,7 +122,7 @@ The helper module can provide any of the following:
     def get_order_detail():
         return OrderDetail
    
-And in cart_helpers/models:
+   And in cart_helpers/models:
     
     from django.db import models
     
@@ -133,5 +133,18 @@ And in cart_helpers/models:
         def __unicode__(self):
             return 'Additional detail for %s' % (unicode(self.order))
 
-Note that in this case you'll need to add `'cart_helpers'` to your `INSTALLED_APPS` 
-setting in order for django to generate the db tables.
+   Note that in this case you'll need to add `'cart_helpers'` to your `INSTALLED_APPS` 
+   setting in order for django to generate the db tables.
+
+3) A `get_add_form` function, which takes a product instance and should return a form 
+   class for adding the product to the cart. For example,
+   
+    
+    from cart.forms import AddToCartForm
+    
+    def get_add_form(product):
+        class AddForm(AddToCartForm):
+            ...
+        
+        return AddForm
+        

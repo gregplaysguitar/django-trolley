@@ -16,8 +16,7 @@ import settings as cart_settings
 from utils import get_product_types
 from api import Cart
 from models import Order
-from cart import get_helper_module
-    
+import helpers
     
 product_type_queryset = ContentType.objects.filter(
     reduce(Q.__or__, [Q(app_label=cls._meta.app_label, model=cls._meta.module_name) for cls in get_product_types()])
@@ -28,67 +27,40 @@ product_type_queryset = ContentType.objects.filter(
 class AddToCartForm(forms.Form):
     """A generic form for adding a product to a cart - should post to 
        cart.views.add"""
-    product_type = forms.ModelChoiceField(
-        queryset=product_type_queryset,
-        widget=forms.widgets.HiddenInput()
-    )
-    product_id = forms.IntegerField(
-        min_value=1,
-        widget=forms.widgets.HiddenInput()
-    )
+       
     quantity = forms.IntegerField(min_value=1, initial=1)
-
-
-    def clean_product_id(self):
-        if self.get_product():
-            return self.cleaned_data['product_id']
-        else:
-            raise forms.ValidationError('Invalid product')
     
-    def get_product(self):
-        product_class = self.cleaned_data['product_type'].model_class()
-        try:
-            return product_class.objects.get(pk=self.cleaned_data['product_id'])
-        except product_class.DoesNotExist:
-            return None
-        
     def get_options(self):
         options = {}
         for field in self.cleaned_data:
-            if field not in ['product_id', 'product_type', 'quantity']:
+            if field not in ['quantity']:
                 options[field] = self.cleaned_data[field]
         return options
-        
     
     def get_quantity(self):
         return self.cleaned_data['quantity']
     
     def add(self, request):
-        Cart(request).add(self.get_product(), self.cleaned_data['quantity'], self.get_options())
-    
+        Cart(request).add(self.product,
+                          self.cleaned_data['quantity'],
+                          self.get_options())
     
     def __init__(self, *args, **kwargs):
         single = kwargs.pop('single', False)
-        product_instance = kwargs.pop('product_instance', False)
-        returnval = super(AddToCartForm, self).__init__(*args, **kwargs)
+        self.product = kwargs.pop('product', None)
+        super(AddToCartForm, self).__init__(*args, **kwargs)
         
         if single:
             self.fields['quantity'].initial = 1
             self.fields['quantity'].widget = forms.widgets.HiddenInput()
-        if product_instance:
-            self.fields['product_id'].initial = product_instance.id
-            self.fields['product_type'].initial = ContentType.objects.get_for_model(product_instance).id
         
-        return returnval
-
-
 
 def checkout_form_factory():
     """Returns a form corresponding to a subset of the ORDER_DETAIL_MODEL, if 
        one is specified and CHECKOUT_FORM_FIELDS is set. Otherwise returns a 
        dummy form."""
     
-    order_detail_cls = get_helper_module().get_order_detail()
+    order_detail_cls = helpers.get_order_detail()
     
     if order_detail_cls and cart_settings.CHECKOUT_FORM_FIELDS:
         class CheckoutForm(forms.ModelForm):
@@ -117,7 +89,6 @@ def shipping_options_form_factory(cart):
             for name in self.cleaned_data:
                 cart.shipping_options[name] = self.cleaned_data[name]
             cart.modified()
-            
     
     for option_tuple in cart.get_available_shipping_options():
         if option_tuple[2]:
@@ -150,7 +121,7 @@ def order_detail_form_factory():
     """Returns a form for the extra custom details defined in ORDER_DETAIL_MODEL.
        Excludes those displayed in the checkout via CHECKOUT_FORM_FIELDS."""
     
-    model_cls = get_helper_module().get_order_detail()
+    model_cls = helpers.get_order_detail()
     if model_cls:
         class OrderDetailForm(forms.ModelForm):
             class Meta:

@@ -7,7 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 
 import settings as cart_settings
-
+import helpers
 
 class CartProductInterface(object):
     """Minimal CartProductInterface implementation, raising NotImplementedError
@@ -114,7 +114,7 @@ class Order(models.Model):
     def get_detail(self):
         """Returns extra detail as defined by get_order_detail()"""
         if not hasattr(self, '_detail_cache'):
-            model_cls = get_helper_module().get_order_detail()
+            model_cls = helpers.get_order_detail()
             
             if model_cls:
                 self._detail_cache = model_cls._default_manager.using(self._state.db).get(order__id__exact=self.id)

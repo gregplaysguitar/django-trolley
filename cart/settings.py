@@ -3,6 +3,10 @@ import os
 from django.conf import settings
 
 
+if getattr(settings, 'CART_ORDER_DETAIL_MODEL', None):
+    raise DeprecationWarning('The CART_ORDER_DETAIL_MODEL setting is deprecated; use a HELPER_MODULE instead.')
+
+
 """A module to provide custom functionality not specific to a product model, eg shipping
 calculations."""
 HELPER_MODULE = getattr(

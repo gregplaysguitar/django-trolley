@@ -130,11 +130,13 @@ def checkout(request):
 
 
 @never_cache
-def delivery(request, order_form_cls=OrderForm):
+def delivery(request):
     """Collects standard delivery information, along with any extra information
        from the order_detail model."""
     
     cart = Cart(request)
+    
+    order_form_cls = helpers.get_order_form()
     
     if not validate_cart(request, 'delivery'):
         return HttpResponseRedirect(reverse(checkout))

@@ -116,9 +116,6 @@ def checkout(request):
             checkout_form = checkout_form_cls(initial=cart.detail_data)
             shipping_options_form = shipping_options_form_cls(prefix='shipping', initial=cart.shipping_options)
         
-        #import pdb;pdb.set_trace()
-        print shipping_options_form_cls, shipping_options_form, 'test'
-        
         return render_to_response(
             'cart/checkout.html',
             RequestContext(request, {

@@ -14,7 +14,6 @@ from django.forms.formsets import formset_factory
 
 import settings as cart_settings
 from utils import get_product_types
-from api import Cart
 from models import Order
 import helpers
     
@@ -41,7 +40,7 @@ class AddToCartForm(forms.Form):
         return self.cleaned_data['quantity']
     
     def add(self, request):
-        Cart(request).add(self.product,
+        helpers.get_cart()(request).add(self.product,
                           self.cleaned_data['quantity'],
                           self.get_options())
     

@@ -15,7 +15,7 @@ from cart.payment import PaymentException
 from cart.views import steps
 from cart import settings as cart_settings
 from cart.payment_forms import CCForm
-from cart.api import Cart
+from cart import helpers
 
 class PaymentBackend:
     """Hosted payment system which passes credit card details to webpay for verification
@@ -137,7 +137,7 @@ class PaymentBackend:
                 RequestContext(request, {
                     'order': order,
                     'form': payment_form,
-                    'cart': Cart(request),
+                    'cart': helpers.get_cart()(request),
                     'error_message': error_message,
                     'steps': steps(request),
                 }),

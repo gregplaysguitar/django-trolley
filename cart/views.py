@@ -15,7 +15,7 @@ from django.utils import importlib
 from django.views.decorators.cache import never_cache
 from django.contrib.contenttypes.models import ContentType
 
-from api import Cart, ItemAlreadyExists
+from api import ItemAlreadyExists
 from utils import form_errors_as_notification, get_current_site
 import settings as cart_settings
 from models import Order
@@ -29,7 +29,7 @@ def index(request):
     
 
 def validate_cart(request, view):
-    cart = Cart(request)
+    cart = helpers.get_cart()(request)
     if view == 'delivery':
         return cart.is_valid()
     elif view == 'payment':
@@ -62,7 +62,7 @@ def checkout(request):
     if cart_settings.SKIP_CHECKOUT:
         return HttpResponseRedirect(reverse('cart.views.delivery'))
     else:
-        cart = Cart(request)
+        cart = helpers.get_cart()(request)
         shipping_options_form_cls = shipping_options_form_factory(cart)
         checkout_form_cls = checkout_form_factory()
         
@@ -115,7 +115,9 @@ def checkout(request):
         else:
             checkout_form = checkout_form_cls(initial=cart.detail_data)
             shipping_options_form = shipping_options_form_cls(prefix='shipping', initial=cart.shipping_options)
-
+        
+        #import pdb;pdb.set_trace()
+        print shipping_options_form_cls, shipping_options_form, 'test'
         
         return render_to_response(
             'cart/checkout.html',
@@ -134,7 +136,7 @@ def delivery(request):
     """Collects standard delivery information, along with any extra information
        from the order_detail model."""
     
-    cart = Cart(request)
+    cart = helpers.get_cart()(request)
     
     order_form_cls = helpers.get_order_form()
     
@@ -249,7 +251,7 @@ def payment(request, order_hash=None, param=None):
     if order_hash:
         order = get_object_or_404(Order, hash=order_hash)
     else:
-        cart = Cart(request)
+        cart = helpers.get_cart()(request)
 
         if not validate_cart(request, 'payment'):
             return HttpResponseRedirect(reverse('cart.views.delivery'))
@@ -283,7 +285,7 @@ def payment(request, order_hash=None, param=None):
 @never_cache
 def complete(request, order_hash):
     """Display completed order information."""
-    cart = Cart(request)
+    cart = helpers.get_cart()(request)
     cart.clear()
     order = get_object_or_404(Order, hash=order_hash)
     
@@ -342,7 +344,7 @@ def clear(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed('GET not allowed; POST is required.')
     else:
-        Cart(request).clear()
+        helpers.get_cart()(request).clear()
         notification = (messages.SUCCESS, 'Your cart was emptied',)
         
         if request.is_ajax():
@@ -363,7 +365,7 @@ def update(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed('GET not allowed; POST is required.')
     else:
-        cart = Cart(request)
+        cart = helpers.get_cart()(request)
         for item in cart:
             index = 'quantity-%s' % unicode(item.formindex)
             if index in request.POST:
@@ -405,20 +407,20 @@ def add(request, content_type_id, product_id, form_class=None):
             form_class = helpers.get_add_form(product)
             
         form = form_class(request.POST, product=product)
-        cart = Cart(request)
+        cart = helpers.get_cart()(request)
 
         if form.is_valid():
             form.add(request)
             notification = (messages.SUCCESS, 'Product was added to your cart. <a href="%s">View cart</a>' % (reverse(checkout)))
         else:
-            notification = (messages.ERROR, 'Could not add product to cart. %s' % form_errors_as_notification(form))
+            notification = (messages.ERROR, 'Could not add product to cart. \r%s' % form_errors_as_notification(form))
         
         if request.is_ajax():
             data = {
                 'notification': notification,
                 'cart': cart.as_dict(),
                 'checkout_url': reverse('cart.views.checkout'),
-                'cart_url': reverse('cart.views.index'),
+                'delivery_url': reverse('cart.views.delivery'),
             }
             if form.is_valid():
                 data.update({

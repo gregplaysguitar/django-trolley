@@ -9,9 +9,8 @@ from django.template import RequestContext
 from django import forms
 
 from cart.payment_forms import CCForm
-from cart.api import Cart
 from cart.views import steps
-
+from cart import helpers
 
 
 class PaymentBackend:
@@ -44,7 +43,7 @@ class PaymentBackend:
             RequestContext(request, {
                 'order': order,
                 'form': payment_form,
-                'cart': Cart(request),
+                'cart': helpers.get_cart()(request),
                 'steps': steps(request),
             }),
         )

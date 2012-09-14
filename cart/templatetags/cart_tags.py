@@ -9,10 +9,10 @@ from django.core.urlresolvers import reverse
 from cart.utils import easy_tag
 from cart import helpers
 from cart.forms import AddToCartForm
-from cart.api import Cart
+from cart import helpers
+
 
 register = template.Library()
-
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -27,7 +27,7 @@ class CartNode(template.Node):
         self.varname = varname
 
     def render(self, context):
-        context[self.varname] = Cart(context['request'])
+        context[self.varname] = helpers.get_cart()(context['request'])
         return ''
 
 @register.tag

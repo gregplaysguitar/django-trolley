@@ -145,13 +145,20 @@ class BaseCart:
 
     
     def as_dict(self):
-        data = {}
+        data = {
+            'quantity': self.quantity(),
+            'subtotal': str(self.subtotal()),
+            'total': str(self.total()),
+            'shipping_cost': str(self.shipping_cost()),
+            'lines': [],
+        }
         for item in self:
             line = dict(item)
             line['product'] = str(item.product)
             line['original_row_total'] = str(item.original_row_total())
             line['row_total'] = str(item.row_total())
-            data[item.formindex] = line
+            line['index'] = item.formindex
+            data['lines'].append(line)
         return data
     
     def ctype_list(self):

@@ -22,7 +22,7 @@ def form_errors_as_notification(form):
         for i in form.errors:
             errors.append("%s: %s" % (i.replace('_', ' ').title(), ', '.join(form.errors[i])))
         
-        return ', '.join(errors)
+        return '\r'.join(errors)
     else:
         return ''
 

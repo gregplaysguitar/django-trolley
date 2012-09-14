@@ -114,7 +114,7 @@ In `cart_helpers/__init__.py`:
         return Cart
 
 2) A `get_order_detail` function, which should return a model to be used to add custom
-   data to a cart Order, similar to django's AUTH_PROFILE_MODULE setting. Use it for 
+   data to a cart Order, similar to django's `AUTH_PROFILE_MODULE` setting. Use it for 
    adding data specific to your project, such as a separate delivery address. The model
    must have a ForeignKey to cart.Order. For example:
 

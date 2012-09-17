@@ -77,7 +77,10 @@ class Item(DictMixin):
     def product(self):
         if not self._product:
             ctype = ContentType.objects.get(pk=self.data['product_content_type_id']).model_class()
-            self._product = ctype.objects.get(pk=self.data['product_pk'])
+            try:
+                self._product = ctype.objects.get(pk=self.data['product_pk'])
+            except ctype.DoesNotExist:
+                self._product = None
         return self._product
     _product = None
     

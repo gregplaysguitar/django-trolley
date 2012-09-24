@@ -121,17 +121,21 @@ def order_detail_form_factory():
     """Returns a form for the extra custom details defined in ORDER_DETAIL_MODEL.
        Excludes those displayed in the checkout via CHECKOUT_FORM_FIELDS."""
     
-    model_cls = helpers.get_order_detail()
-    if model_cls:
-        class OrderDetailForm(forms.ModelForm):
-            class Meta:
-                model = model_cls
-                exclude = ['order'] + (cart_settings.CHECKOUT_FORM_FIELDS)
-        return OrderDetailForm
+    form_cls = helpers.get_order_detail_form()
+    if form_cls:
+        return form_cls
     else:
-        # dummy form class with no fields, to simplify the view
-        class DummyForm(forms.Form):
-            def __init__(self, *args, **kwargs):
-                kwargs.pop('instance', None)
-                super(DummyForm, self).__init__(*args, **kwargs)
-        return DummyForm
+        model_cls = helpers.get_order_detail()
+        if model_cls:
+            class OrderDetailForm(forms.ModelForm):
+                class Meta:
+                    model = model_cls
+                    exclude = ['order'] + (cart_settings.CHECKOUT_FORM_FIELDS)
+            return OrderDetailForm
+        else:
+            # dummy form class with no fields, to simplify the view
+            class DummyForm(forms.Form):
+                def __init__(self, *args, **kwargs):
+                    kwargs.pop('instance', None)
+                    super(DummyForm, self).__init__(*args, **kwargs)
+            return DummyForm

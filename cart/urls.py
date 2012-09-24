@@ -17,14 +17,14 @@ urlpatterns = patterns('cart.views',
     # catch old static links to checkout/
     (r'^checkout/$', RedirectView.as_view(url=reverse_lazy('cart.views.checkout'))),
     
-    (r'^delivery/$', 'delivery'),
+    (r'^delivery$', 'delivery'),
     (r'^payment/$', 'payment'),
     (r'^payment/([\w_\-]+)/$', 'payment'),
-    (r'^payment/([\w_\-]+)/([\w_\-]+)/$', 'payment'),
-    (r'^complete/([\w_\-]+)/$', 'complete'),
+    (r'^payment/([\w_\-]+)/([\w_\-]+)$', 'payment'),
+    (r'^complete/([\w_\-]+)$', 'complete'),
 
     (r'^add/(\d+)/(\d+)$', 'add', {}, 'cart_add'),
-    (r'^clear/$', 'clear', {}, 'cart_clear'),
-    (r'^update/$', 'update', {}, 'cart_update'),
+    (r'^clear$', 'clear', {}, 'cart_clear'),
+    (r'^update$', 'update', {}, 'cart_update'),
     
 )

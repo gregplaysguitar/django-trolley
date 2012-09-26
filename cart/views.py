@@ -106,6 +106,7 @@ def checkout(request):
                     
                 return HttpResponse(simplejson.dumps({
                     'success': valid,
+                    'cart': cart.as_dict(),
                     'redirect_url': redirect_url if valid else None,
                     'html': html,
                 }), mimetype='application/json')
@@ -213,6 +214,7 @@ def delivery(request):
                     
                 return HttpResponse(simplejson.dumps({
                     'success': valid,
+                    'cart': cart.as_dict(),
                     'redirect_url': redirect_url,
                     'hard_redirect': True,
                     'html': html,
@@ -422,6 +424,7 @@ def add(request, content_type_id, product_id, form_class=None):
             if form.is_valid():
                 data.update({
                     'success': True,
+                    'cart': cart.as_dict(),
                     'product_pk': product.pk,
                     'product_name': product.name,
                     'product_quantity_added': form.get_quantity(),

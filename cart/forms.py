@@ -66,11 +66,6 @@ def checkout_form_factory():
             class Meta:
                 model = order_detail_cls
                 fields = cart_settings.CHECKOUT_FORM_FIELDS
-            
-            def update(self, cart):
-                for name in self.cleaned_data:
-                    cart.detail_data[name] = self.cleaned_data[name]
-                cart.modified()
         
         return CheckoutForm
     else:
@@ -84,10 +79,7 @@ def shipping_options_form_factory(cart):
     """Returns a shipping options form based on the options derived
        from the cart contents."""
     class ShippingOptionsForm(forms.Form):
-        def update(self, cart):
-            for name in self.cleaned_data:
-                cart.shipping_options[name] = self.cleaned_data[name]
-            cart.modified()
+        pass
     
     for option_tuple in cart.get_available_shipping_options():
         if option_tuple[2]:

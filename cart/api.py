@@ -121,7 +121,7 @@ class Item(DictMixin):
         return ", ".join([self['options'][key] for key in self['options']])
   
     
-class BaseCart:
+class BaseCart(object):
     '''Abstract Cart class - don't use this directly. Should be extended by custom Cart
        classes.'''
        
@@ -249,6 +249,21 @@ class BaseCart:
     
     def is_valid(self):
         return len(self.errors()) == 0
+    
+    def update_shipping_options(self, data):
+        for name in data:
+            self.shipping_options[name] = data[name]
+        self.modified()
+    
+    def update_data(self, data):
+        for name in data:
+            self.data[name] = data[name]
+        self.modified()
+        
+    def update_detail_data(self, data):
+        for name in data:
+            self.detail_data[name] = data[name]
+        self.modified()
     
     def shipping_cost(self):
         '''Should return total shipping cost for the cart.'''

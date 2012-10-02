@@ -72,9 +72,9 @@ def checkout(request):
             valid = checkout_form.is_valid() and shipping_options_form.is_valid()
             
             if valid:
-                checkout_form.update(cart)
-                shipping_options_form.update(cart)
-            
+                cart.update_detail_data(checkout_form.cleaned_data)
+                cart.update_shipping_options(shipping_options_form.cleaned_data)
+                
             for item in cart:
                 index = 'quantity-%s' % unicode(item.formindex)
                 try:
@@ -193,7 +193,7 @@ def delivery(request):
                         setattr(detail, field, cart.detail_data[field])
                     detail.save()
                 
-                cart.data['order_pk'] = order.pk
+                cart.update_data({'order_pk': order.pk})
                 cart.modified()
                 
                 redirect_url = reverse('cart.views.payment', args=(order.hash,))

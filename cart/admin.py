@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.db import models
 from django import forms
 from django.utils.safestring import mark_safe
+from django.contrib.contenttypes.models import ContentType
 
 import helpers
 import settings as cart_settings
@@ -36,21 +37,36 @@ class OrderLineLabelWidget(forms.widgets.HiddenInput):
             return mark_safe('<p>%s</p>%s' % (text_value, super(OrderLineLabelWidget, self).render(*args, **kwargs)))
 
 
+class ReadonlyWidget(forms.widgets.HiddenInput):
+    def __init__(self, *args, **kwargs):
+        super(ReadonlyWidget, self).__init__(*args, **kwargs)
+        self.is_hidden = False
+
+    def render(self, name, value, **kwargs):
+        original = super(ReadonlyWidget, self).render(name, value, **kwargs)
+        try:
+            ctype = ContentType.objects.get(pk=value)
+        except ContentType.DoesNotExist:
+            return original
+        else:
+            return mark_safe('<p>%s</p>%s' % (ctype, original))
+
+
 class OrderLineForm(forms.ModelForm):
     class Meta:
         model = OrderLine
-        exclude = ('product_content_type', ) 
     
     def __init__(self, *args, **kwargs):
         super(OrderLineForm, self).__init__(*args, **kwargs)
-        self.fields['product_object_id'].widget = OrderLineLabelWidget(model=kwargs.get('instance', None))
+        if self.instance.pk:
+            self.fields['product_object_id'].widget = OrderLineLabelWidget(model=kwargs.get('instance', None))
+            self.fields['product_content_type'].widget = ReadonlyWidget()
 
 
 class OrderLineInline(admin.TabularInline):
     model = OrderLine
     extra = 0
     form = OrderLineForm
-
 
 
 class OrderAdmin(admin.ModelAdmin):

@@ -90,7 +90,9 @@ class Order(models.Model):
             groups[ctype.pk].append(line)
             
         for ctype_pk in groups:
-            ContentType.objects.get(pk=ctype_pk).model_class().complete_purchase(groups[ctype_pk], self)
+            cls = ContentType.objects.get(pk=ctype_pk).model_class()
+            if hasattr('cls', 'complete_purchase'):
+                cls.complete_purchase(groups[ctype_pk], self)
     
     def total(self):
         return sum(line.price for line in self.orderline_set.all()) + self.shipping_cost

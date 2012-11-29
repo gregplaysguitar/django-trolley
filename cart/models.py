@@ -91,7 +91,7 @@ class Order(models.Model):
             
         for ctype_pk in groups:
             cls = ContentType.objects.get(pk=ctype_pk).model_class()
-            if hasattr('cls', 'complete_purchase'):
+            if hasattr(cls, 'complete_purchase'):
                 cls.complete_purchase(groups[ctype_pk], self)
     
     def total(self):

@@ -85,7 +85,7 @@ functionality for the cart. To use, create a module and add it to your settings,
 The helper module can provide any of the following:
 
 1) A `get_cart` function, which should return a custom cart API class extending 
-   cart.api.Cart. This class should override certain methods to provide custom 
+   cart.api.BaseCart. This class should override certain methods to provide custom 
    functionality. For example:
 
 In `cart_helpers/__init__.py`:

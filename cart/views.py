@@ -137,13 +137,13 @@ def delivery(request):
     cart = helpers.get_cart()(request)
     
     order_form_cls = helpers.get_order_form()
+    detail_cls = helpers.get_order_detail()
     
     if not validate_cart(request, 'delivery'):
         return HttpResponseRedirect(reverse(checkout))
     else:
         try:
             instance = Order.objects.get(pk=cart.data.get('order_pk', None))
-            detail_cls = helpers.get_order_detail()
             if detail_cls:
                 try:
                     detail_instance = instance.get_detail()
@@ -170,8 +170,8 @@ def delivery(request):
                 order = form.save(commit=False)
                 order.session_id = request.session.session_key
                 order.shipping_cost = cart.shipping_cost()
-                order.status = 'confirmed'
                 
+                # save needed here to create the primary key
                 order.save()
                 
                 for line in order.orderline_set.all():
@@ -187,12 +187,24 @@ def delivery(request):
                 
                 # if the form has no 'save' method, assume it's the dummy form
                 if callable(getattr(detail_form, 'save', None)):
+                    # the detail object may have been created on order save, so check for that
+                    if detail_cls:
+                        try:
+                            detail_form.instance = order.get_detail()
+                        except detail_cls.DoesNotExist:
+                            pass
+                        
                     detail = detail_form.save(commit=False)
                     detail.order = order # in case it is being created for the first time
                     for field in cart_settings.CHECKOUT_FORM_FIELDS:
                         setattr(detail, field, cart.detail_data[field])
                     detail.save()
                 
+                # confirmed status can trigger notifications etc, so don't set it until all
+                # order info is in the database
+                order.status = 'confirmed'
+                order.save()
+               
                 cart.update_data({'order_pk': order.pk})
                 cart.modified()
                 

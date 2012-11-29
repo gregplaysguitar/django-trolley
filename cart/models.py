@@ -95,7 +95,18 @@ class Order(models.Model):
                 cls.complete_purchase(groups[ctype_pk], self)
     
     def total(self):
-        return sum(line.price for line in self.orderline_set.all()) + self.shipping_cost
+        total = sum(line.price for line in self.orderline_set.all()) + self.shipping_cost
+        
+        detail_cls = helpers.get_order_detail()
+        if detail_cls:
+            try:
+                detail = self.get_detail()
+            except detail_cls.DoesNotExist:
+                pass
+            else:
+                total += getattr(detail, 'additional_total', lambda: 0)()
+                
+        return total
         
     def total_str(self, prefix='$'):
         return "%s%.2f" % (prefix, self.total())
@@ -111,7 +122,6 @@ class Order(models.Model):
     @models.permalink
     def get_admin_url(self):
         return ('admin:cart_order_change', (self.pk,))
-
     
     def get_detail(self):
         """Returns extra detail as defined by get_order_detail()"""

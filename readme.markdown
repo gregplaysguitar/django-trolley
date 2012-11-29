@@ -74,6 +74,11 @@ A demo project is provided to demonstrate the example shop and payment app worki
     >> python manage.py syncdb
     >> python manage.py runserver
 
+Then browse to the demo shop admin at <http://localhost:8000/admin/> and <http://localhost:8000/>.
+The demo shop is set to send emails to a local test mailserver; to run this open a terminal and 
+type
+
+    >> python -m smtpd -n -c DebuggingServer localhost:1025
 
 # Helper Module
 

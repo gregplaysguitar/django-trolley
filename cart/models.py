@@ -192,7 +192,7 @@ class PaymentAttempt(models.Model):
 CHARS = string.digits + string.letters
 
 def create_hash(sender, **kwargs):
-    while not kwargs['instance'].hash or PaymentAttempt.objects.filter(hash=kwargs['instance'].hash).exclude(pk=kwargs['instance'].pk):
+    while not kwargs['instance'].hash or sender.objects.filter(hash=kwargs['instance'].hash).exclude(pk=kwargs['instance'].pk):
         hash = ''.join(random.choice(CHARS) for i in xrange(8))
         kwargs['instance'].hash = hash
 models.signals.pre_save.connect(create_hash, sender=PaymentAttempt)

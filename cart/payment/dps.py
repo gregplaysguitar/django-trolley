@@ -99,9 +99,9 @@ class PaymentBackend:
             txn_id=payment_attempt.hash,
             return_url=return_url,
             txn_data=[
-                order.street_address,
-                order.suburb,
-                order.city,
+                order.street_address.encode('ascii', 'replace'),
+                order.suburb.encode('ascii', 'replace'),
+                order.city.encode('ascii', 'replace'),
             ],
         )    
         

@@ -11,7 +11,10 @@ from django.shortcuts import render_to_response, get_object_or_404
 
 class PaymentBackend:
     """Payment backend which redirects to a DPS-hosted credit card page for payment."""
-
+    
+    def get_currency(self):
+        return 'NZD'
+    
     def get_setting(self, key):
         return getattr(settings, key)
     
@@ -42,7 +45,7 @@ class PaymentBackend:
             'PxPayUserId': self.get_setting('PXPAY_USERID'),
             'PxPayKey': self.get_setting('PXPAY_KEY'),
             'TxnType': 'Purchase',
-            'CurrencyInput' : 'NZD',
+            'CurrencyInput' : self.get_currency(),
 
             'AmountInput': amount,
             'MerchantReference': merchant_ref,

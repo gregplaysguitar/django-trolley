@@ -259,8 +259,10 @@ def payment(request, order_hash=None, param=None):
                 # Try old format for backwards-compatibility
                 backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
             
-           
             backend = backend_module.PaymentBackend()
+
+            if hasattr(backend, 'set_order'):
+                backend.set_order(order)
             
             return backend.paymentView(request, param, order)
         else:

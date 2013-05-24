@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from django.conf import settings
 import urllib, urllib2
 from xml.etree import cElementTree as ElementTree
+
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
@@ -10,35 +11,36 @@ from django.shortcuts import render_to_response, get_object_or_404
 
 class PaymentBackend:
     """Payment backend which redirects to a DPS-hosted credit card page for payment."""
+
+    def get_setting(self, key):
+        return getattr(settings, key)
     
     def pxrequest(self, values):
         """Performs a generic request to pxpay."""
-        req = urllib2.Request(settings.PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
+        req = urllib2.Request(self.get_setting('PXPAY_URL'), ElementTree.tostring(ConvertDictToXml(values)))
         response = urllib2.urlopen(req)
         
         string =  response.read()
         
         return ElementTree.fromstring(string)
     
-    
     def read_result(self, result):
         """Retrieves pxpay response data, given a result hash."""
         values = {
             'ProcessResponse': {
-                'PxPayUserId': settings.PXPAY_USERID,
-                'PxPayKey': settings.PXPAY_KEY,
+                'PxPayUserId': self.get_setting('PXPAY_USERID'),
+                'PxPayKey': self.get_setting('PXPAY_KEY'),
                 'Response': result,
             }
         }
         return self.pxrequest(values)
     
-    
     def payment_request(self, amount, merchant_ref, email, txn_id, return_url, txn_data=[]):
         """Makes a payment request to the pxpay server."""
         
         values = {
-            'PxPayUserId': settings.PXPAY_USERID,
-            'PxPayKey': settings.PXPAY_KEY,
+            'PxPayUserId': self.get_setting('PXPAY_USERID'),
+            'PxPayKey': self.get_setting('PXPAY_KEY'),
             'TxnType': 'Purchase',
             'CurrencyInput' : 'NZD',
 
@@ -57,8 +59,6 @@ class PaymentBackend:
         return self.pxrequest({
             'GenerateRequest': values,
         })
-
-    
     
     def paymentView(self, request, param, order):
         """View which handles the payment requests and redirects to the appropriate DPS page."""
@@ -107,9 +107,6 @@ class PaymentBackend:
         
         return HttpResponseRedirect(xml.find('URI').text)
         
-
-
-
 
 class XmlDictObject(dict):
     """

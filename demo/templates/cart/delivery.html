@@ -1,0 +1,26 @@
+{% extends 'cart/base.html' %}
+{% load url from future %}
+
+{% block title %}Delivery Details{% endblock %}
+
+
+{% block content %}
+
+<h2>Delivery Details</h2>
+
+<form method="post" action="?">
+    {% csrf_token %}
+
+    {{ form.non_field_errors }}
+    {{ detail_form.non_field_errors }}
+
+    {{ form.as_p }}   
+    {{ detail_form.as_p }}
+    
+    <div class="total">Total ${{ cart.total|floatformat:2 }}</div>
+    <input type="submit" name="next" value="Next: Payment">
+
+</form>
+
+
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load url from future %}
+
+{% block title %}Payment{% endblock %}
+
+
+{% block content %}
+
+<h2>Payment</h2>
+
+<form method="post" action="?">
+    {% csrf_token %}
+
+    {{ order_form.non_field_errors }}
+    {{ detail_form.non_field_errors }}
+    {{ payment_form.non_field_errors }}
+    
+    {{ order_form.as_p }}
+    {{ detail_form.as_p }}
+    {{ payment_form.as_p }}
+
+    <input type="submit" name="next" value="Next: Payment">
+
+</form>
+
+
+{% endblock %}
+

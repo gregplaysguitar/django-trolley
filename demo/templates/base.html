@@ -1,0 +1,34 @@
+{% load url from future %}
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset=utf-8> 
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+
+<title>{% block title %}{% endblock %}</title>
+
+</head>
+<body class="{% block bodyclass %}{% endblock %}">
+
+
+<header>
+    <h1>Demo Shop</h1>
+    <nav>
+        <a href="{% url 'shop.views.index' %}">Shop</a>
+        <a href="{% url 'cart.views.index' %}">Cart</a>
+        <a href="{% url 'payment.views.index' %}">Payment</a>
+    </nav>
+</header>
+
+<hr>
+	
+	
+{% block content %}{% endblock %}
+
+</body> 
+</html>
+
+<!-- Localized -->

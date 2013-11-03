@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import simplejson
+
 from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response, get_object_or_404
@@ -7,51 +9,60 @@ from django.conf import settings
 from django.template.loader import get_template
 from django.template.loader import render_to_string
 from django.core.mail import send_mail, mail_managers
-from models import Order
-from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
 from django.core.urlresolvers import reverse
-from api import Cart, ItemAlreadyExists
-import simplejson
-from utils import form_errors_as_notification, get_order_detail_class
 from django.contrib import messages
-import settings as cart_settings
 from django.utils import importlib
 from django.views.decorators.cache import never_cache
+from django.contrib.contenttypes.models import ContentType
+
+from api import ItemAlreadyExists
+from utils import form_errors_as_notification, get_current_site
+import settings as cart_settings
+from models import Order
+from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
+import helpers
 
 
 def index(request):
-    return HttpResponseRedirect(reverse(checkout))
+    """Dummy view for backwards-compatibility - allows reversing of cart.view.index"""
+    pass
     
-    """
-    if request.is_ajax():
-        template = 'cart/index_ajax.html',
-    else:
-        template = 'cart/index.html',
-        
-    cart = Cart(request)
-            
-    return render_to_response(
-        template, 
-        RequestContext(request, {
-            'cart': cart,
-        })
-    )
-    """
 
-def steps():
-    return (
-        (reverse('cart.views.checkout'), 'Review Order'),
-        (reverse('cart.views.delivery'), 'Delivery Details'),
-        (reverse('cart.views.payment'), 'Payment Details'), 
-    )
+def validate_cart(request, view):
+    cart = helpers.get_cart()(request)
+    if view == 'delivery':
+        return cart.is_valid()
+    elif view == 'payment':
+        return bool(Order.objects.filter(pk=cart.data.get('order_pk', None)).count())
+    
+
+def steps(request):
+    steps = []
+    
+    if not cart_settings.SKIP_CHECKOUT:
+        steps.append((reverse('cart.views.checkout'), 'Review Order'))
+    
+    for step in [
+        ('delivery', 'Delivery Details'),
+        ('payment', 'Payment Details')
+    ]:
+        if validate_cart(request, step[0]):
+            steps.append((reverse('cart.views.%s' % step[0]), step[1]))
+        else:
+            steps.append((None, step[1]))
+
+    return steps
 
 
 @never_cache
 def checkout(request):
+    """Display a list of cart items, quantities, total etc, with the option
+       to change quantities, specify shipping options etc."""
+       
     if cart_settings.SKIP_CHECKOUT:
-        return HttpResponseRedirect(steps()[1][0])
+        return HttpResponseRedirect(reverse('cart.views.delivery'))
     else:
-        cart = Cart(request)
+        cart = helpers.get_cart()(request)
         shipping_options_form_cls = shipping_options_form_factory(cart)
         checkout_form_cls = checkout_form_factory()
         
@@ -61,9 +72,9 @@ def checkout(request):
             valid = checkout_form.is_valid() and shipping_options_form.is_valid()
             
             if valid:
-                checkout_form.update(cart)
-                shipping_options_form.update(cart)
-            
+                cart.update_detail_data(checkout_form.cleaned_data)
+                cart.update_shipping_options(shipping_options_form.cleaned_data)
+                
             for item in cart:
                 index = 'quantity-%s' % unicode(item.formindex)
                 try:
@@ -86,7 +97,7 @@ def checkout(request):
                     'cart/checkout_ajax.html',
                     RequestContext(request, {
                         'cart': cart,
-                        'steps': steps(),
+                        'steps': steps(request),
                         'current_step': 1,
                         'checkout_form': checkout_form,
                         'shipping_options_form': shipping_options_form,
@@ -95,6 +106,7 @@ def checkout(request):
                     
                 return HttpResponse(simplejson.dumps({
                     'success': valid,
+                    'cart': cart.as_dict(),
                     'redirect_url': redirect_url if valid else None,
                     'html': html,
                 }), mimetype='application/json')
@@ -104,13 +116,12 @@ def checkout(request):
         else:
             checkout_form = checkout_form_cls(initial=cart.detail_data)
             shipping_options_form = shipping_options_form_cls(prefix='shipping', initial=cart.shipping_options)
-
         
         return render_to_response(
             'cart/checkout.html',
             RequestContext(request, {
                 'cart': cart,
-                'steps': steps(),
+                'steps': steps(request),
                 'current_step': 1,
                 'checkout_form': checkout_form,
                 'shipping_options_form': shipping_options_form,
@@ -120,16 +131,25 @@ def checkout(request):
 
 @never_cache
 def delivery(request):
-    cart = Cart(request)
+    """Collects standard delivery information, along with any extra information
+       from the order_detail model."""
     
-    if not cart.is_valid():
+    cart = helpers.get_cart()(request)
+    
+    order_form_cls = helpers.get_order_form()
+    detail_cls = helpers.get_order_detail()
+    
+    if not validate_cart(request, 'delivery'):
         return HttpResponseRedirect(reverse(checkout))
     else:
         try:
             instance = Order.objects.get(pk=cart.data.get('order_pk', None))
-            try:
-                detail_instance = instance.get_detail()
-            except get_order_detail_class().DoesNotExist:
+            if detail_cls:
+                try:
+                    detail_instance = instance.get_detail()
+                except detail_cls.DoesNotExist:
+                    detail_instance = None
+            else:
                 detail_instance = None
         except Order.DoesNotExist:
             instance = None
@@ -143,30 +163,55 @@ def delivery(request):
         
         
         if request.POST:
-            form = OrderForm(request.POST, **form_kwargs)
+            form = order_form_cls(request.POST, **form_kwargs)
             detail_form = detail_form_cls(request.POST, **detail_form_kwargs)
             valid = form.is_valid() and detail_form.is_valid()
             if valid:
                 order = form.save(commit=False)
                 order.session_id = request.session.session_key
                 order.shipping_cost = cart.shipping_cost()
+                
+                # save needed here to create the primary key
                 order.save()
+                
+                for line in order.orderline_set.all():
+                    line.delete()
+                for item in cart:
+                    order.orderline_set.create(
+                        product=item.product,
+                        quantity=item['quantity'],
+                        price=item.row_total(),
+                        options=simplejson.dumps(item['options'])
+                    )
+                
                 
                 # if the form has no 'save' method, assume it's the dummy form
                 if callable(getattr(detail_form, 'save', None)):
+                    # the detail object may have been created on order save, so check for that
+                    if detail_cls:
+                        try:
+                            detail_form.instance = order.get_detail()
+                        except detail_cls.DoesNotExist:
+                            pass
+                        
                     detail = detail_form.save(commit=False)
                     detail.order = order # in case it is being created for the first time
                     for field in cart_settings.CHECKOUT_FORM_FIELDS:
                         setattr(detail, field, cart.detail_data[field])
                     detail.save()
-                    
                 
-                cart.data['order_pk'] = order.pk
+                # confirmed status can trigger notifications etc, so don't set it until all
+                # order info is in the database
+                order.status = 'confirmed'
+                order.save()
+               
+                cart.update_data({'order_pk': order.pk})
                 cart.modified()
                 
+                redirect_url = reverse('cart.views.payment', args=(order.hash,))
+            else:
+                redirect_url = None
                 
-            redirect_url = reverse('cart.views.payment')
-            
             if request.is_ajax():
                 html = render_to_string(
                     'cart/delivery_ajax.html',
@@ -174,14 +219,15 @@ def delivery(request):
                         'cart': cart,
                         'form': form,
                         'detail_form': detail_form,
-                        'steps': steps(),
+                        'steps': steps(request),
                         'current_step': 2,
                     })
                 )
                     
                 return HttpResponse(simplejson.dumps({
                     'success': valid,
-                    'redirect_url': redirect_url if valid else None,
+                    'cart': cart.as_dict(),
+                    'redirect_url': redirect_url,
                     'hard_redirect': True,
                     'html': html,
                 }), mimetype='application/json')
@@ -190,7 +236,7 @@ def delivery(request):
                 return HttpResponseRedirect(redirect_url)
                 
         else:
-            form = OrderForm(**form_kwargs)
+            form = order_form_cls(**form_kwargs)
             detail_form = detail_form_cls(**detail_form_kwargs)
     
     
@@ -200,7 +246,7 @@ def delivery(request):
                 'cart': cart,
                 'form': form,
                 'detail_form': detail_form,
-                'steps': steps(),
+                'steps': steps(request),
                 'current_step': 2,
             })
         )
@@ -210,78 +256,88 @@ def delivery(request):
     
 
 @never_cache
-def payment(request, param=None):
-    cart = Cart(request)
+def payment(request, order_hash=None, param=None):
+    """Handle payments using the specified backend."""
+    
+    if order_hash:
+        order = get_object_or_404(Order, hash=order_hash)
+    else:
+        cart = helpers.get_cart()(request)
 
-    try:
-        order = Order.objects.get(pk=cart.data.get('order_pk', None))
-    except Order.DoesNotExist:
-        return HttpResponseRedirect(reverse('cart.views.checkout'))
-    
-    for line in order.orderline_set.all():
-        line.delete()
-    for item in cart:
-        order.orderline_set.create(
-            product=item.product,
-            quantity=item['quantity'],
-            price=item.row_total(),
-            options=simplejson.dumps(item['options'])
-        )
-    order.status = 'confirmed'
-    order.save()
-    
+        if not validate_cart(request, 'payment'):
+            return HttpResponseRedirect(reverse('cart.views.delivery'))
+        else:
+            # Assume this will work since validate_cart returned True
+            order = Order.objects.get(pk=cart.data['order_pk'])
+            return HttpResponseRedirect(reverse('cart.views.payment', args=(order.hash,)))
+        
     if order.total():
-        try:
-            backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
-        except ImportError:
-            backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
-        
-       
-        backend = backend_module.PaymentBackend()
-        
-        return backend.paymentView(request, param, order)
+        if cart_settings.PAYMENT_BACKEND:
+            try:
+                backend_module = importlib.import_module(cart_settings.PAYMENT_BACKEND)
+            except ImportError:
+                # Try old format for backwards-compatibility
+                backend_module = importlib.import_module('cart.payment.%s' % cart_settings.PAYMENT_BACKEND)
+            
+           
+            backend = backend_module.PaymentBackend()
+            
+            return backend.paymentView(request, param, order)
+        else:
+            # If no payment backend, assume we're skipping this step 
+            return HttpResponseRedirect(order.get_absolute_url())
     else:
         order.payment_successful = True
         order.save()
         return HttpResponseRedirect(order.get_absolute_url())
-    
+
 
 
 @never_cache
 def complete(request, order_hash):
-    cart = Cart(request)
+    """Display completed order information."""
+    cart = helpers.get_cart()(request)
     cart.clear()
     order = get_object_or_404(Order, hash=order_hash)
     
-    if (not order.notification_sent or not order.acknowledgement_sent) and order.payment_successful:
-        acknowledge_body = render_to_string('cart/email/order_acknowledge.txt',
-            RequestContext(request, {'order': order}))
-        acknowledge_subject = render_to_string('cart/email/order_acknowledge_subject.txt',
-                RequestContext(request, {'order': order}))
-
-        notify_body = render_to_string('cart/email/order_notify.txt',
-            RequestContext(request, {'order': order}))
-
-        def TMP_send_messages():
-            if order.email and not order.acknowledgement_sent:
-                send_mail(
-                    acknowledge_subject,
-                    acknowledge_body, 
-                    settings.DEFAULT_FROM_EMAIL,
-                    [order.email]
-                )
-            if not order.notification_sent:
-                send_mail(
-                    "Order Received",
-                    notify_body, 
-                    settings.DEFAULT_FROM_EMAIL,
-                    [t[1] for t in cart_settings.MANAGERS]
-                )
-            order.save()
-         
-        #run_async(TMP_send_messages)
-        TMP_send_messages()
+    if not order.notification_sent:
+        notify_body = render_to_string(
+            'cart/email/order_notify.txt',
+            RequestContext(request, {
+                'order': order,
+                'site': get_current_site(),
+            })
+        )
+        send_mail(
+            "Order Received",
+            notify_body, 
+            settings.DEFAULT_FROM_EMAIL,
+            [t[1] for t in cart_settings.MANAGERS]
+        )
         order.notification_sent = True
+        order.save()
+    
+    if order.email and not order.acknowledgement_sent:
+        acknowledge_body = render_to_string(
+            'cart/email/order_acknowledge.txt',
+            RequestContext(request, {
+                'order': order,
+                'site': get_current_site(),
+            })
+        )
+        acknowledge_subject = render_to_string(
+            'cart/email/order_acknowledge_subject.txt',
+            RequestContext(request, {
+                'order': order,
+                'site': get_current_site(),
+            })
+        )
+        send_mail(
+            acknowledge_subject,
+            acknowledge_body, 
+            settings.DEFAULT_FROM_EMAIL,
+            [order.email]
+        )
         order.acknowledgement_sent = True
         order.save()
         
@@ -295,10 +351,11 @@ def complete(request, order_hash):
 
 
 def clear(request):
+    """Remove all items from the cart."""
     if request.method != 'POST':
         return HttpResponseNotAllowed('GET not allowed; POST is required.')
     else:
-        Cart(request).clear()
+        helpers.get_cart()(request).clear()
         notification = (messages.SUCCESS, 'Your cart was emptied',)
         
         if request.is_ajax():
@@ -315,10 +372,11 @@ def clear(request):
 
 @never_cache
 def update(request):
+    """Update cart quantities."""
     if request.method != 'POST':
         return HttpResponseNotAllowed('GET not allowed; POST is required.')
     else:
-        cart = Cart(request)
+        cart = helpers.get_cart()(request)
         for item in cart:
             index = 'quantity-%s' % unicode(item.formindex)
             if index in request.POST:
@@ -346,41 +404,43 @@ def update(request):
             return HttpResponseRedirect(request.POST.get('redirect_to', reverse(checkout)))
 
 
-    
-
-
-def add(request, form_class=AddToCartForm):
-    """add a product to the cart
+def add(request, content_type_id, product_id, form_class=None):
+    """Add a product to the cart
     POST data should include content_type_id, 
     """
     if request.method != 'POST':
-        return HttpResponseNotAllowed('GET not allowed; POST is required.')
+        return HttpResponseNotAllowed(['POST'])
     else:
-        form = form_class(request.POST)
-        cart = Cart(request)
+        ctype = get_object_or_404(ContentType, pk=content_type_id)
+        product = get_object_or_404(ctype.model_class(), pk=product_id)
+        
+        if not form_class:
+            form_class = helpers.get_add_form(product)
+            
+        form = form_class(request.POST, product=product)
+        cart = helpers.get_cart()(request)
 
         if form.is_valid():
             form.add(request)
             notification = (messages.SUCCESS, 'Product was added to your cart. <a href="%s">View cart</a>' % (reverse(checkout)))
         else:
-            notification = (messages.ERROR, 'Could not add product to cart. %s' % form_errors_as_notification(form))
-                    
-        
+            notification = (messages.ERROR, 'Could not add product to cart. \r%s' % form_errors_as_notification(form))
         
         if request.is_ajax():
             data = {
                 'notification': notification,
                 'cart': cart.as_dict(),
                 'checkout_url': reverse('cart.views.checkout'),
-                'cart_url': reverse('cart.views.index'),
+                'delivery_url': reverse('cart.views.delivery'),
             }
             if form.is_valid():
                 data.update({
                     'success': True,
-                    'product_pk': form.get_product().pk,
-                    'product_name': form.get_product().name,
+                    'cart': cart.as_dict(),
+                    'product_pk': product.pk,
+                    'product_name': product.name,
                     'product_quantity_added': form.get_quantity(),
-                    'product_quantity': cart.get(form.get_product(), form.get_options())['quantity'],
+                    'product_quantity': cart.get(product, form.get_options())['quantity'],
                     'total_quantity': cart.quantity(),
                 })
                 

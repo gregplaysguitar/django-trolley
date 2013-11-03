@@ -1,31 +1,26 @@
 # -*- coding: utf-8 -*-
 
-from django.conf import settings
 import urllib, urllib2
-from django.core.urlresolvers import reverse
+
+from django.conf import settings
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django import forms
-from cart import settings as cart_settings
+
 from cart.payment_forms import CCForm
-from cart.api import Cart
-
-
+from cart.views import steps
+from cart import helpers
 
 
 class PaymentBackend:
+    """Payment backend which saves credit card details to the database for manual processing."""
     
     def paymentView(self, request, param, order):
         if request.POST:
-            
-            #import time;time.sleep(10)
-            
             payment_form = CCForm(request.POST)
             if payment_form.is_valid():
                 
-                #{'ccv_number': 123, 'holder': u'123', 'number': 4111111111111111L, 'expiration': datetime.date(2012, 1, 31)}
-            
                 payment_attempt = order.paymentattempt_set.create()
                 result = "\n".join(['%s: %s' % t for t in payment_form.cleaned_data.iteritems()])
 
@@ -48,7 +43,8 @@ class PaymentBackend:
             RequestContext(request, {
                 'order': order,
                 'form': payment_form,
-                'cart': Cart(request),
+                'cart': helpers.get_cart()(request),
+                'steps': steps(request),
             }),
         )
         

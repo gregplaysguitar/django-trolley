@@ -1,0 +1,19 @@
+{% extends 'shop/base.html' %}
+{% load url from future %}
+{% load cart_tags %}
+
+
+
+{% block content %}
+	
+	<h1>{{ product.name }}</h1>
+	{{ product.description|linebreaks }}
+	
+	{% get_add_to_cart_form for product as form %}
+	<form action="{% add_to_cart_url product %}" method="post">
+	    {% csrf_token %}
+	    {{ form }}
+	    <input type="submit" value="Add to Cart">
+	</form>
+	
+{% endblock %}

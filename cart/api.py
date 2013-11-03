@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import pickle
-from django.contrib.contenttypes.models import ContentType
-from UserDict import DictMixin
+import types
 import hashlib
 import decimal
+
+from django.contrib.contenttypes.models import ContentType
+from UserDict import DictMixin
+
 
 
 CART_INDEX = 'cart'
@@ -74,7 +77,10 @@ class Item(DictMixin):
     def product(self):
         if not self._product:
             ctype = ContentType.objects.get(pk=self.data['product_content_type_id']).model_class()
-            self._product = ctype.objects.get(pk=self.data['product_pk'])
+            try:
+                self._product = ctype.objects.get(pk=self.data['product_pk'])
+            except ctype.DoesNotExist:
+                self._product = None
         return self._product
     _product = None
     
@@ -115,7 +121,10 @@ class Item(DictMixin):
         return ", ".join([self['options'][key] for key in self['options']])
   
     
-class Cart:
+class BaseCart(object):
+    '''Abstract Cart class - don't use this directly. Should be extended by custom Cart
+       classes.'''
+       
     def __init__(self, request):
         if not request.session.get(CART_INDEX, None):
             request.session[CART_INDEX] = {}
@@ -139,13 +148,20 @@ class Cart:
 
     
     def as_dict(self):
-        data = {}
+        data = {
+            'quantity': self.quantity(),
+            'subtotal': str(self.subtotal()),
+            'total': str(self.total()),
+            'shipping_cost': str(self.shipping_cost()),
+            'lines': [],
+        }
         for item in self:
             line = dict(item)
             line['product'] = str(item.product)
             line['original_row_total'] = str(item.original_row_total())
             line['row_total'] = str(item.row_total())
-            data[item.formindex] = line
+            line['index'] = item.formindex
+            data['lines'].append(line)
         return data
     
     def ctype_list(self):
@@ -209,21 +225,8 @@ class Cart:
             del(self.data[index])
         self.modified()
         
-    
     def quantity(self):
         return sum([item.get('quantity', 0) for item in self])
-    
-    def shipping_cost(self):
-        cost = decimal.Decimal(0)
-        for ctype in self.ctype_list():
-            cost += (ctype.model_class().get_shipping_cost([item for item in self if item.ctype() == ctype], self) or 0)
-        return cost
-    
-    def get_available_shipping_options(self):
-        options = ()
-        for ctype in self.ctype_list():
-            options += ctype.model_class().get_available_shipping_options([item for item in self if item.ctype() == ctype]) or ()
-        return options
         
     def subtotal(self):
         return sum([(item.row_total() or 0) for item in self])
@@ -238,7 +241,7 @@ class Cart:
         
         for ctype in self.ctype_list():
             try:
-                ctype.model_class().verify_purchase([item for item in self if item.ctype() == ctype])
+                self.verify_purchase()
             except CartIntegrityError, e:
                 errors.append(e)
         #print errors
@@ -247,6 +250,56 @@ class Cart:
     def is_valid(self):
         return len(self.errors()) == 0
     
-  
+    def update_shipping_options(self, data):
+        for name in data:
+            self.shipping_options[name] = data[name]
+        self.modified()
     
-  
+    def update_data(self, data):
+        for name in data:
+            self.data[name] = data[name]
+        self.modified()
+        
+    def update_detail_data(self, data):
+        for name in data:
+            self.detail_data[name] = data[name]
+        self.modified()
+    
+    def shipping_cost(self):
+        '''Should return total shipping cost for the cart.'''
+        raise NotImplementedError()
+    
+    def verify_purchase(self):
+        '''Should raise a CartIntegrityError if the purchase is not allowed.'''
+        raise NotImplementedError()
+    
+    def get_available_shipping_options(self):
+        '''Should return a list of shipping options for the cart, each of the form
+               
+               (key, name, choices)
+               
+           where "choices" is a list of key,value pairs in the usual django format.'''
+        raise NotImplementedError()
+
+
+def has_static_method(obj, attr):
+    return isinstance(getattr(obj, attr, None), types.FunctionType)
+
+class Cart(BaseCart):
+    '''Default Cart class, providing simple defaults for all customisable methods.'''
+    
+    def shipping_cost(self):
+        if any([has_static_method(c, 'shipping_cost') for c in self.ctype_list()]):
+            raise DeprecationWarning(u'The shipping_cost static method is deprecated; use a HELPER_MODULE instead.')
+        return 0
+    
+    def verify_purchase(self):
+        if any([has_static_method(c, 'verify_purchase') for c in self.ctype_list()]):
+            raise DeprecationWarning(u'The verify_purchase static method is deprecated; use a HELPER_MODULE instead.')
+        return
+    
+    def get_available_shipping_options(self):
+        if any([has_static_method(c, 'get_available_shipping_options') for c in self.ctype_list()]):
+            raise DeprecationWarning(u'The get_available_shipping_options static method is deprecated; use a HELPER_MODULE instead.')
+        return []
+    

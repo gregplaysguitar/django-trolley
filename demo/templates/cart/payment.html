@@ -1,0 +1,24 @@
+{% extends "cart/base.html" %}
+
+{% block title %}Payment Details{% endblock %}
+
+
+{% block content %}
+
+<h2>Payment Details</h2>
+
+<form method="post" action="?">
+    {% csrf_token %}
+
+    {{ form.non_field_errors }}
+    {{ form.as_p }}
+    
+    <span class="total">Total ${{ order.total|floatformat:2 }}</span>
+    <input type="submit" value="Confirm Payment">
+    
+</form>
+
+
+
+{% endblock %}
+

@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from django.contrib import admin
-from models import Order, OrderLine, PaymentAttempt
 import datetime
-import settings as cart_settings
+
+from django.contrib import admin
 from django.db import models
 from django import forms
 from django.utils.safestring import mark_safe
+from django.contrib.contenttypes.models import ContentType
+
+import helpers
+import settings as cart_settings
+from models import Order, OrderLine, PaymentAttempt
 
 
 
@@ -33,14 +37,30 @@ class OrderLineLabelWidget(forms.widgets.HiddenInput):
             return mark_safe('<p>%s</p>%s' % (text_value, super(OrderLineLabelWidget, self).render(*args, **kwargs)))
 
 
+class ReadonlyWidget(forms.widgets.HiddenInput):
+    def __init__(self, *args, **kwargs):
+        super(ReadonlyWidget, self).__init__(*args, **kwargs)
+        self.is_hidden = False
+
+    def render(self, name, value, **kwargs):
+        original = super(ReadonlyWidget, self).render(name, value, **kwargs)
+        try:
+            ctype = ContentType.objects.get(pk=value)
+        except ContentType.DoesNotExist:
+            return original
+        else:
+            return mark_safe('<p>%s</p>%s' % (ctype, original))
+
+
 class OrderLineForm(forms.ModelForm):
     class Meta:
         model = OrderLine
-        exclude = ('product_content_type', ) 
     
     def __init__(self, *args, **kwargs):
         super(OrderLineForm, self).__init__(*args, **kwargs)
-        self.fields['product_object_id'].widget = OrderLineLabelWidget(model=kwargs.get('instance', None))
+        if self.instance.pk:
+            self.fields['product_object_id'].widget = OrderLineLabelWidget(model=kwargs.get('instance', None))
+            self.fields['product_content_type'].widget = ReadonlyWidget()
 
 
 class OrderLineInline(admin.TabularInline):
@@ -49,20 +69,29 @@ class OrderLineInline(admin.TabularInline):
     form = OrderLineForm
 
 
-
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'total_str', 'name', 'status', 'payment_successful', 'created', 'shipped', 'products',)
+    list_display = ('id', 'total_str', 'name', 'status', 'payment_successful', 'created', 'paid', 'shipped', 'products', 'hash', )
     list_display_links = ('id', 'total_str', 'name',)
     list_filter = ('status', 'payment_successful', 'creation_date', 'completion_date')
     search_fields = ('name', 'email',)
     inlines = [OrderLineInline, PaymentAttemptInline]
     actions = ('set_status_to_shipped',)
+    save_on_top = True
+    
     
     def created(self, instance):
         if instance.creation_date:
             return datetime.datetime.strftime(instance.creation_date, '%Y-%m-%d')
         else:
             return 'N/A'
+    created.admin_order_field = 'creation_date'
+    
+    def paid(self, instance):
+        if instance.payment_date:
+            return datetime.datetime.strftime(instance.payment_date, '%Y-%m-%d')
+        else:
+            return 'N/A'
+    paid.admin_order_field = 'payment_date'
     
     def products(self, instance):
         products = []
@@ -78,17 +107,17 @@ class OrderAdmin(admin.ModelAdmin):
             return datetime.datetime.strftime(instance.completion_date, '%Y-%m-%d')
         else:
             return 'N/A'
+    shipped.admin_order_field = 'completion_date'
+
     def set_status_to_shipped(self, request, queryset):
         for item in queryset.all():
             item.status = 'shipped'
             item.save()
 
-  
-if getattr(cart_settings, 'ORDER_DETAIL_MODEL', False):
-    app_label, model_name = cart_settings.ORDER_DETAIL_MODEL.split('.')
-    extra_detail_model = models.get_model(app_label, model_name)
+order_detail = helpers.get_order_detail()
+if order_detail:
     class ExtraDetailInline(admin.StackedInline):
-        model = extra_detail_model
+        model = order_detail
         max_num = 1
         extra = 1
     

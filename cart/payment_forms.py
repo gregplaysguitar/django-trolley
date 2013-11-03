@@ -19,6 +19,8 @@ class CreditCardField(forms.CharField):
         elif len(number) == 14:
             if number[:2] == "36":
                 return "MasterCard"
+            elif number[:2] in ("36", "38") or number[:3] in ("300", "301", "302", "303", "304", "305"):
+                return "Diners Club"
         elif len(number) == 15:
             if number[:2] in ("34", "37"):
                 return "American Express"
@@ -30,7 +32,7 @@ class CreditCardField(forms.CharField):
             if number[0] == "4":
                 return "Visa"
         return "Unknown"
-    
+
     def clean(self, value):
         """Check if given CC number is valid and one of the
            card types we accept"""

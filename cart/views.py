@@ -381,6 +381,7 @@ def add(request, form_class=AddToCartForm):
                     'product_name': form.get_product().name,
                     'product_quantity_added': form.get_quantity(),
                     'product_quantity': cart.get(form.get_product(), form.get_options())['quantity'],
+                    'total_quantity': cart.quantity(),
                 })
                 
             return HttpResponse(simplejson.dumps(data), mimetype='application/json')

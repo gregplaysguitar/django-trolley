@@ -84,12 +84,14 @@ class OrderAdmin(admin.ModelAdmin):
             return datetime.datetime.strftime(instance.creation_date, '%Y-%m-%d')
         else:
             return 'N/A'
+    created.admin_order_field = 'creation_date'
     
     def paid(self, instance):
         if instance.payment_date:
             return datetime.datetime.strftime(instance.payment_date, '%Y-%m-%d')
         else:
             return 'N/A'
+    paid.admin_order_field = 'payment_date'
     
     def products(self, instance):
         products = []
@@ -105,6 +107,8 @@ class OrderAdmin(admin.ModelAdmin):
             return datetime.datetime.strftime(instance.completion_date, '%Y-%m-%d')
         else:
             return 'N/A'
+    shipped.admin_order_field = 'completion_date'
+
     def set_status_to_shipped(self, request, queryset):
         for item in queryset.all():
             item.status = 'shipped'

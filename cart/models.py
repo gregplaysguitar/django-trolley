@@ -91,10 +91,23 @@ class Order(models.Model):
             groups[ctype.pk].append(line)
             
         for ctype_pk in groups:
-            ContentType.objects.get(pk=ctype_pk).model_class().complete_purchase(groups[ctype_pk], self)
+            cls = ContentType.objects.get(pk=ctype_pk).model_class()
+            if hasattr(cls, 'complete_purchase'):
+                cls.complete_purchase(groups[ctype_pk], self)
     
     def total(self):
-        return sum(line.price for line in self.orderline_set.all()) + self.shipping_cost
+        total = sum(line.price for line in self.orderline_set.all()) + self.shipping_cost
+        
+        detail_cls = helpers.get_order_detail()
+        if detail_cls:
+            try:
+                detail = self.get_detail()
+            except detail_cls.DoesNotExist:
+                pass
+            else:
+                total += getattr(detail, 'additional_total', lambda: 0)()
+                
+        return total
         
     def total_str(self, prefix='$'):
         return "%s%.2f" % (prefix, self.total())
@@ -110,7 +123,6 @@ class Order(models.Model):
     @models.permalink
     def get_admin_url(self):
         return ('admin:cart_order_change', (self.pk,))
-
     
     def get_detail(self):
         """Returns extra detail as defined by get_order_detail()"""
@@ -181,7 +193,7 @@ class PaymentAttempt(models.Model):
 CHARS = string.digits + string.letters
 
 def create_hash(sender, **kwargs):
-    while not kwargs['instance'].hash or PaymentAttempt.objects.filter(hash=kwargs['instance'].hash).exclude(pk=kwargs['instance'].pk):
+    while not kwargs['instance'].hash or sender.objects.filter(hash=kwargs['instance'].hash).exclude(pk=kwargs['instance'].pk):
         hash = ''.join(random.choice(CHARS) for i in xrange(8))
         kwargs['instance'].hash = hash
 models.signals.pre_save.connect(create_hash, sender=PaymentAttempt)

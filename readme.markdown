@@ -74,6 +74,11 @@ A demo project is provided to demonstrate the example shop and payment app worki
     >> python manage.py syncdb
     >> python manage.py runserver
 
+Then browse to the demo shop admin at <http://localhost:8000/admin/> and <http://localhost:8000/>.
+The demo shop is set to send emails to a local test mailserver; to run this open a terminal and 
+type
+
+    >> python -m smtpd -n -c DebuggingServer localhost:1025
 
 # Helper Module
 
@@ -85,7 +90,7 @@ functionality for the cart. To use, create a module and add it to your settings,
 The helper module can provide any of the following:
 
 1) A `get_cart` function, which should return a custom cart API class extending 
-   cart.api.Cart. This class should override certain methods to provide custom 
+   cart.api.BaseCart. This class should override certain methods to provide custom 
    functionality. For example:
 
 In `cart_helpers/__init__.py`:

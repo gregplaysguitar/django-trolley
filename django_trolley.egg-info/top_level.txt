@@ -1,4 +1,0 @@
-shop
-demo
-payment
-cart

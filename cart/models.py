@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import datetime, string, random, decimal
-import json
-    
+
+try:
+    import json
+except ImportError:
+    # old python fallback
+    import simplejson as json
+
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic

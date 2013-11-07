@@ -336,7 +336,7 @@ def complete(request, order_hash):
         )
         try:
             acknowledge_body_html = render_to_string('cart/email/order_acknowledge.html',
-                RequestContext(request, {'order': order}))
+                RequestContext(request, {'order': order, 'site': get_current_site()}))
         except TemplateDoesNotExist:
             acknowledge_body_html = None
         

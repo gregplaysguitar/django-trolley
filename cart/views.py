@@ -9,6 +9,7 @@ from django.template.loader import render_to_string
 from django.template.loader import TemplateDoesNotExist
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
+from django.contrib.sites.models import Site
 
 from models import Order
 from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
@@ -257,18 +258,19 @@ def complete(request, order_hash):
     order = get_object_or_404(Order, hash=order_hash)
     
     if (not order.notification_sent or not order.acknowledgement_sent) and order.payment_successful:
+        site = Site.objects.get_current()
         acknowledge_body = render_to_string('cart/email/order_acknowledge.txt',
-            RequestContext(request, {'order': order}))
+            RequestContext(request, {'order': order, 'site': site}))
         acknowledge_subject = render_to_string('cart/email/order_acknowledge_subject.txt',
-                RequestContext(request, {'order': order}))
+                RequestContext(request, {'order': order, 'site': site}))
         try:
             acknowledge_body_html = render_to_string('cart/email/order_acknowledge.html',
-                RequestContext(request, {'order': order}))
+                RequestContext(request, {'order': order, 'site': site}))
         except TemplateDoesNotExist:
             acknowledge_body_html = None
 
         notify_body = render_to_string('cart/email/order_notify.txt',
-            RequestContext(request, {'order': order}))
+            RequestContext(request, {'order': order, 'site': site}))
 
         def TMP_send_messages():
             if order.email and not order.acknowledgement_sent:

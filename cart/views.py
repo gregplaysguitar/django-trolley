@@ -8,7 +8,9 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.conf import settings
 from django.template.loader import get_template
 from django.template.loader import render_to_string
-from django.core.mail import send_mail, mail_managers
+from django.template.loader import TemplateDoesNotExist
+from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.utils import importlib
@@ -332,12 +334,19 @@ def complete(request, order_hash):
                 'site': get_current_site(),
             })
         )
-        send_mail(
-            acknowledge_subject,
-            acknowledge_body, 
-            settings.DEFAULT_FROM_EMAIL,
-            [order.email]
-        )
+        try:
+            acknowledge_body_html = render_to_string('cart/email/order_acknowledge.html',
+                RequestContext(request, {'order': order}))
+        except TemplateDoesNotExist:
+            acknowledge_body_html = None
+        
+        msg = EmailMultiAlternatives(acknowledge_subject,
+                                     acknowledge_body,
+                                     settings.DEFAULT_FROM_EMAIL,
+                                     [order.email])
+        if acknowledge_body_html:
+            msg.attach_alternative(acknowledge_body_html, "text/html")
+        msg.send()
         order.acknowledgement_sent = True
         order.save()
         

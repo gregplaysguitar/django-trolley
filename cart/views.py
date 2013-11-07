@@ -6,7 +6,10 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.conf import settings
 from django.template.loader import get_template
 from django.template.loader import render_to_string
-from django.core.mail import send_mail, mail_managers
+from django.template.loader import TemplateDoesNotExist
+from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+
 from models import Order
 from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
 from django.core.urlresolvers import reverse
@@ -258,18 +261,24 @@ def complete(request, order_hash):
             RequestContext(request, {'order': order}))
         acknowledge_subject = render_to_string('cart/email/order_acknowledge_subject.txt',
                 RequestContext(request, {'order': order}))
+        try:
+            acknowledge_body_html = render_to_string('cart/email/order_acknowledge.html',
+                RequestContext(request, {'order': order}))
+        except TemplateDoesNotExist:
+            acknowledge_body_html = None
 
         notify_body = render_to_string('cart/email/order_notify.txt',
             RequestContext(request, {'order': order}))
 
         def TMP_send_messages():
             if order.email and not order.acknowledgement_sent:
-                send_mail(
-                    acknowledge_subject,
-                    acknowledge_body, 
-                    settings.DEFAULT_FROM_EMAIL,
-                    [order.email]
-                )
+                msg = EmailMultiAlternatives(acknowledge_subject,
+                                             acknowledge_body,
+                                             settings.DEFAULT_FROM_EMAIL,
+                                             [order.email])
+                if acknowledge_body_html:
+                    msg.attach_alternative(acknowledge_body_html, "text/html")
+                msg.send()
             if not order.notification_sent:
                 send_mail(
                     "Order Received",

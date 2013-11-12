@@ -1,5 +1,5 @@
 __version__ = '1.1'
-VERSION = tuple(map(int, __version__.split('.'))) + ('dev',)
+VERSION = tuple(map(int, __version__.split('.')))
 
 def get_helper_module():
     '''Get the helper module as defined in the settings.'''

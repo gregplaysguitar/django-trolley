@@ -16,9 +16,18 @@ PXPAY_KEY = getattr(settings, 'PXPAY_KEY')
 class PaymentBackend:
     """Payment backend which redirects to a DPS-hosted credit card page for payment."""
     
+    def pxpay_url(self):
+        return PXPAY_URL
+        
+    def pxpay_userid(self):
+        return PXPAY_USERID
+    
+    def pxpay_key(self):
+        return PXPAY_KEY
+    
     def pxrequest(self, values):
         """Performs a generic request to pxpay."""
-        req = urllib2.Request(PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
+        req = urllib2.Request(self.pxpay_url(), ElementTree.tostring(ConvertDictToXml(values)))
         response = urllib2.urlopen(req)
         
         string =  response.read()
@@ -30,8 +39,8 @@ class PaymentBackend:
         """Retrieves pxpay response data, given a result hash."""
         values = {
             'ProcessResponse': {
-                'PxPayUserId': PXPAY_USERID,
-                'PxPayKey': PXPAY_KEY,
+                'PxPayUserId': self.pxpay_userid(),
+                'PxPayKey': self.pxpay_key(),
                 'Response': result,
             }
         }
@@ -42,8 +51,8 @@ class PaymentBackend:
         """Makes a payment request to the pxpay server."""
         
         values = {
-            'PxPayUserId': PXPAY_USERID,
-            'PxPayKey': PXPAY_KEY,
+            'PxPayUserId': self.pxpay_userid(),
+            'PxPayKey': self.pxpay_key(),
             'TxnType': 'Purchase',
             'CurrencyInput' : 'NZD',
 

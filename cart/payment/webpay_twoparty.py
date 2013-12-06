@@ -17,7 +17,7 @@ from cart import settings as cart_settings
 from cart.payment_forms import CCForm
 from cart import helpers
 
-class PaymentBackend:
+class PaymentBackend(object):
     """Hosted payment system which passes credit card details to webpay for verification
     and payment. Requires webpay libraries to be installed, and the following settings:
     

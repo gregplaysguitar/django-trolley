@@ -13,7 +13,7 @@ from cart.views import steps
 from cart import helpers
 
 
-class PaymentBackend:
+class PaymentBackend(object):
     """Payment backend which saves credit card details to the database for manual processing."""
     
     def paymentView(self, request, param, order):

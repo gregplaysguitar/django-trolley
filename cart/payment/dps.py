@@ -13,7 +13,7 @@ PXPAY_USERID = getattr(settings, 'PXPAY_USERID')
 PXPAY_KEY = getattr(settings, 'PXPAY_KEY')
 
 
-class PaymentBackend:
+class PaymentBackend(object):
     """Payment backend which redirects to a DPS-hosted credit card page for payment."""
     
     def pxpay_url(self):

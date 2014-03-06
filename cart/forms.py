@@ -7,7 +7,6 @@ from decimal import Decimal
 from django import forms
 from django.shortcuts import render_to_response
 from django.template import RequestContext as Context
-from django.contrib.formtools.wizard import FormWizard
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.forms.formsets import formset_factory

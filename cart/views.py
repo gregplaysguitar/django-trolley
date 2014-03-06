@@ -4,7 +4,7 @@ import simplejson
 
 from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import RequestContext
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.template.loader import get_template
 from django.template.loader import render_to_string
@@ -23,6 +23,9 @@ import settings as cart_settings
 from models import Order
 from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
 import helpers
+
+
+render_to_response = helpers.get_render_function()
 
 
 def index(request):

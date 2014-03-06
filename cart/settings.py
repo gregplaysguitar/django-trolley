@@ -91,3 +91,6 @@ LOG_DIR = getattr(
     'CART_LOG_DIR',
     None
 )
+
+TEMPLATE_RENDERER = getattr(settings, 'CART_TEMPLATE_RENDERER', 
+                            'django.shortcuts.render_to_response')

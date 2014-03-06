@@ -5,7 +5,12 @@ import urllib, urllib2
 from xml.etree import cElementTree as ElementTree
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import get_object_or_404
+
+from cart import helpers
+
+
+render_to_response = helpers.get_render_function()
 
 
 PXPAY_URL = getattr(settings, 'PXPAY_URL', 'https://sec.paymentexpress.com/pxpay/pxaccess.aspx')

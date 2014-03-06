@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from django.conf.urls.defaults import *
+try:
+    from django.conf.urls import *
+except ImportError:
+    from django.conf.urls.defaults import *
 
 
 urlpatterns = patterns('shop.views',

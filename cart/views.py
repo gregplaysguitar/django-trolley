@@ -81,17 +81,18 @@ def checkout(request):
                 cart.update_shipping_options(shipping_options_form.cleaned_data)
                 
             for item in cart:
-                index = 'quantity-%s' % unicode(item.formindex)
-                try:
-                    if str(request.POST.get(index, None)).lower() == 'remove':
-                        quantity = 0
-                    else:
-                        quantity = int(request.POST.get(index, item['quantity']) or 0)
+                # update quantities if changed
+                q = request.POST.get('quantity-%s' % item.formindex, None)
+                if q == 'remove':
+                    quantity = 0
+                else:
+                    try:
+                        quantity = int(q)
+                    except ValueError:
+                        quantity = item['quantity']
+                if quantity != item['quantity']:
                     cart.update(item.product, quantity, item['options'])
-                except ValueError:
-                    pass
                     
-          
             if request.POST.get('next', False):
                 redirect_url = reverse(delivery)
             else:

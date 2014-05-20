@@ -4,7 +4,6 @@ import urllib, urllib2
 
 from django.conf import settings
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django import forms
 
@@ -13,7 +12,10 @@ from cart.views import steps
 from cart import helpers
 
 
-class PaymentBackend:
+render_to_response = helpers.get_render_function()
+
+
+class PaymentBackend(object):
     """Payment backend which saves credit card details to the database for manual processing."""
     
     def paymentView(self, request, param, order):

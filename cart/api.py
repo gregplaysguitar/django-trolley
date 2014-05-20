@@ -26,9 +26,8 @@ class CartIntegrityError(Exception):
 
 
 def create_cart_index(product, options):
-    return (ContentType.objects.get_for_model(product).pk, 
-            product.pk,
-            pickle.dumps(options))
+    return '|'.join([str(k) for k in (ContentType.objects.get_for_model(product).pk, product.pk,
+            pickle.dumps(options))])
 
 
 
@@ -142,7 +141,7 @@ class BaseCart(object):
         
         for item in map(self.lines.get, keys):
             try:
-                yield item
+                yield Item(item, self)
             except ItemIntegrityError:
                 pass
 
@@ -175,14 +174,14 @@ class BaseCart(object):
     def add(self, product, quantity=1, options={}):
         index = create_cart_index(product, options)
         if not self.lines.get(index, False):
-            self.lines[index] = Item({
+            self.lines[index] = {
                 'product_pk': product.pk,
                 'product_content_type_id': ContentType.objects.get_for_model(product).pk,
                 'options': options,
                 'quantity': quantity
-            }, self)
+            }
         else:
-            self.lines[index].update_quantity(self.lines[index]['quantity'] + quantity)
+            self.lines[index]['quantity'] = (self.lines[index]['quantity'] + quantity)
         
         self.modified()
             
@@ -205,7 +204,8 @@ class BaseCart(object):
         q = int(quantity or 0)
         try:
             if q:
-                self.lines[create_cart_index(product, options)].update_quantity(q) 
+                index = create_cart_index(product, options)
+                self.lines[index]['quantity'] = q
             else:
                 self.remove(product, options)
             self.modified()

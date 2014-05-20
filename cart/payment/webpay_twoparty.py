@@ -5,7 +5,7 @@ import urllib, urllib2
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.template import RequestContext
 from django import forms
 
@@ -17,7 +17,11 @@ from cart import settings as cart_settings
 from cart.payment_forms import CCForm
 from cart import helpers
 
-class PaymentBackend:
+
+render_to_response = helpers.get_render_function()
+
+
+class PaymentBackend(object):
     """Hosted payment system which passes credit card details to webpay for verification
     and payment. Requires webpay libraries to be installed, and the following settings:
     

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import datetime, string, random, decimal, simplejson
-
+import datetime, string, random, decimal
+import json
+    
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
@@ -152,7 +153,7 @@ class OrderLine(models.Model):
     
     def options_text(self):
         if self.options:
-            options = simplejson.loads(self.options)
+            options = json.loads(self.options)
             return ", ".join([options[key] for key in options])
         else:
             return ''
@@ -192,7 +193,7 @@ class PaymentAttempt(models.Model):
 CHARS = string.digits + string.letters
 
 def create_hash(sender, **kwargs):
-    while not kwargs['instance'].hash or PaymentAttempt.objects.filter(hash=kwargs['instance'].hash).exclude(pk=kwargs['instance'].pk):
+    while not kwargs['instance'].hash or sender.objects.filter(hash=kwargs['instance'].hash).exclude(pk=kwargs['instance'].pk):
         hash = ''.join(random.choice(CHARS) for i in xrange(8))
         kwargs['instance'].hash = hash
 models.signals.pre_save.connect(create_hash, sender=PaymentAttempt)

@@ -4,11 +4,13 @@ import simplejson
 
 from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import RequestContext
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.template.loader import get_template
 from django.template.loader import render_to_string
-from django.core.mail import send_mail, mail_managers
+from django.template.loader import TemplateDoesNotExist
+from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.utils import importlib
@@ -21,6 +23,9 @@ import settings as cart_settings
 from models import Order
 from forms import AddToCartForm, OrderForm, shipping_options_form_factory, order_detail_form_factory, checkout_form_factory
 import helpers
+
+
+render_to_response = helpers.get_render_function()
 
 
 def index(request):
@@ -76,17 +81,18 @@ def checkout(request):
                 cart.update_shipping_options(shipping_options_form.cleaned_data)
                 
             for item in cart:
-                index = 'quantity-%s' % unicode(item.formindex)
-                try:
-                    if str(request.POST.get(index, None)).lower() == 'remove':
-                        quantity = 0
-                    else:
-                        quantity = int(request.POST.get(index, item['quantity']) or 0)
+                # update quantities if changed
+                q = request.POST.get('quantity-%s' % item.formindex, None)
+                if q == 'remove':
+                    quantity = 0
+                else:
+                    try:
+                        quantity = int(q)
+                    except ValueError:
+                        quantity = item['quantity']
+                if quantity != item['quantity']:
                     cart.update(item.product, quantity, item['options'])
-                except ValueError:
-                    pass
                     
-          
             if request.POST.get('next', False):
                 redirect_url = reverse(delivery)
             else:
@@ -332,12 +338,19 @@ def complete(request, order_hash):
                 'site': get_current_site(),
             })
         )
-        send_mail(
-            acknowledge_subject,
-            acknowledge_body, 
-            settings.DEFAULT_FROM_EMAIL,
-            [order.email]
-        )
+        try:
+            acknowledge_body_html = render_to_string('cart/email/order_acknowledge.html',
+                RequestContext(request, {'order': order, 'site': get_current_site()}))
+        except TemplateDoesNotExist:
+            acknowledge_body_html = None
+        
+        msg = EmailMultiAlternatives(acknowledge_subject,
+                                     acknowledge_body,
+                                     settings.DEFAULT_FROM_EMAIL,
+                                     [order.email])
+        if acknowledge_body_html:
+            msg.attach_alternative(acknowledge_body_html, "text/html")
+        msg.send()
         order.acknowledgement_sent = True
         order.save()
         
@@ -441,6 +454,7 @@ def add(request, content_type_id, product_id, form_class=None):
                     'product_name': product.name,
                     'product_quantity_added': form.get_quantity(),
                     'product_quantity': cart.get(product, form.get_options())['quantity'],
+                    'total_quantity': cart.quantity(),
                 })
                 
             return HttpResponse(simplejson.dumps(data), mimetype='application/json')

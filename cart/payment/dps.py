@@ -5,7 +5,12 @@ import urllib, urllib2
 from xml.etree import cElementTree as ElementTree
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import get_object_or_404
+
+from cart import helpers
+
+
+render_to_response = helpers.get_render_function()
 
 
 PXPAY_URL = getattr(settings, 'PXPAY_URL', 'https://sec.paymentexpress.com/pxpay/pxaccess.aspx')
@@ -13,12 +18,21 @@ PXPAY_USERID = getattr(settings, 'PXPAY_USERID')
 PXPAY_KEY = getattr(settings, 'PXPAY_KEY')
 
 
-class PaymentBackend:
+class PaymentBackend(object):
     """Payment backend which redirects to a DPS-hosted credit card page for payment."""
+    
+    def pxpay_url(self):
+        return PXPAY_URL
+        
+    def pxpay_userid(self):
+        return PXPAY_USERID
+    
+    def pxpay_key(self):
+        return PXPAY_KEY
     
     def pxrequest(self, values):
         """Performs a generic request to pxpay."""
-        req = urllib2.Request(PXPAY_URL, ElementTree.tostring(ConvertDictToXml(values)))
+        req = urllib2.Request(self.pxpay_url(), ElementTree.tostring(ConvertDictToXml(values)))
         response = urllib2.urlopen(req)
         
         string =  response.read()
@@ -30,8 +44,8 @@ class PaymentBackend:
         """Retrieves pxpay response data, given a result hash."""
         values = {
             'ProcessResponse': {
-                'PxPayUserId': PXPAY_USERID,
-                'PxPayKey': PXPAY_KEY,
+                'PxPayUserId': self.pxpay_userid(),
+                'PxPayKey': self.pxpay_key(),
                 'Response': result,
             }
         }
@@ -42,8 +56,8 @@ class PaymentBackend:
         """Makes a payment request to the pxpay server."""
         
         values = {
-            'PxPayUserId': PXPAY_USERID,
-            'PxPayKey': PXPAY_KEY,
+            'PxPayUserId': self.pxpay_userid(),
+            'PxPayKey': self.pxpay_key(),
             'TxnType': 'Purchase',
             'CurrencyInput' : 'NZD',
 
@@ -104,9 +118,9 @@ class PaymentBackend:
             txn_id=payment_attempt.hash,
             return_url=return_url,
             txn_data=[
-                order.street_address,
-                order.suburb,
-                order.city,
+                order.street_address.encode('ascii', 'replace'),
+                order.suburb.encode('ascii', 'replace'),
+                order.city.encode('ascii', 'replace'),
             ],
         )    
         

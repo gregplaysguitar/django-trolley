@@ -73,7 +73,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = ('id', 'total_str', 'name', 'status', 'payment_successful', 'created', 'paid', 'shipped', 'products', 'hash', )
     list_display_links = ('id', 'total_str', 'name',)
     list_filter = ('status', 'payment_successful', 'creation_date', 'completion_date')
-    search_fields = ('name', 'email',)
+    search_fields = ('name', 'email', 'hash', 'id')
     inlines = [OrderLineInline, PaymentAttemptInline]
     actions = ('set_status_to_shipped',)
     save_on_top = True

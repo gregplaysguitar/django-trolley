@@ -5,9 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from django import forms
-from django.shortcuts import render_to_response
 from django.template import RequestContext as Context
-from django.contrib.formtools.wizard import FormWizard
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.forms.formsets import formset_factory
@@ -21,6 +19,8 @@ product_type_queryset = ContentType.objects.filter(
     reduce(Q.__or__, [Q(app_label=cls._meta.app_label, model=cls._meta.module_name) for cls in get_product_types()])
 ) if get_product_types() else ContentType.objects.none()
 
+
+render_to_response = helpers.get_render_function()
 
 
 class AddToCartForm(forms.Form):

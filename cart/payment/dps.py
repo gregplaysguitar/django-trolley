@@ -185,7 +185,7 @@ def _ConvertDictToXmlRecurse(parent, dictitem):
                 parent.append(elem)
                 _ConvertDictToXmlRecurse(elem, child)
     else:
-        parent.text = str(dictitem)
+        parent.text = unicode(dictitem).encode('ascii', 'ignore')
     
 def ConvertDictToXml(xmldict):
     """
